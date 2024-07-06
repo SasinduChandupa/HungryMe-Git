@@ -155,14 +155,14 @@ body.dark-mode {
     padding-inline-start: 15px;
 }
 
-.Topic h1 {
+/* .Topic h1 {
     font-size: 80px;
     font-family:fantasy; 
     color: #ff0000;
     padding: auto;
     margin: 20px 0;
     margin-bottom: 0.5px;
-}
+} */
 
 #typewriter {
     font-size: 20px;
@@ -264,7 +264,7 @@ body.dark-mode {
     margin-right: 0px;
 }
 
-.container {
+.container{
     cursor: pointer;
     padding-right: 0px;
 }
@@ -588,3 +588,5 @@ body.dark-mode {
     transform: scale(1.1);
 }
 
+/* ------------------------------------------------------------------ */
+/* ---------------------------Shop Owner---------------------------- */
