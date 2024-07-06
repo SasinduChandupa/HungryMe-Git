@@ -1,3 +1,37 @@
+<!-- <?php
+            // Example PHP code to fetch and display shop name
+            // Replace with your actual database connection and query
+            $servername = "localhost";
+            $username = "username";
+            $password = "password";
+            $dbname = "your_database";
+
+            // Create connection
+            $conn = new mysqli($servername, $username, $password, $dbname);
+
+            // Check connection
+            if ($conn->connect_error) {
+                die("Connection failed: " . $conn->connect_error);
+            }
+
+            // Assuming you have a session or a parameter indicating the logged-in shop owner's username
+            $username = "shop_owner_username"; // Replace with actual username
+
+            // Query to fetch shop name based on username
+            $sql = "SELECT shop_name FROM shop_owners WHERE username = '$username'";
+            $result = $conn->query($sql);
+
+            if ($result->num_rows > 0) {
+                // Output data of each row
+                while ($row = $result->fetch_assoc()) {
+                    echo $row["shop_name"];
+                }
+            } else {
+                echo "Shop name not found.";
+            }
+
+            $conn->close();
+            ?> -->
 <!DOCTYPE html>
 <html lang="en">
 
@@ -87,7 +121,9 @@
     </nav>
 
     <div class="Topic">
-        <h1>S h o p O w n e r</h1>
+        <h1> 
+            <!-- $username = "shop_owner_username"; -->
+        </h1>
     </div>
     <div id="typewriter">
         <script>
@@ -130,19 +166,34 @@
         </script>
     </div>
 
+    <!-- Display the menu list -->
+    <div class="container" id="menuList">
+        <h3>Menu List</h3>
+        <ul id="menuItemsList">
+            <!-- Menu items will be dynamically inserted here -->
+        </ul>
+    </div>
+
+    <br><br>
+
     <!-- Shop Owner Menu Customization -->
-    <div class="container" id="ShopOwnerForm">
-        <h2>Customize Your Shop Menu</h2>
-        <div class="form-element">
-            <label for="menu-item-name">Menu Item Name</label>
-            <input type="text" id="menu-item-name" placeholder="Enter Menu Item Name">
-            <label for="menu-item-price">Menu Item Price</label>
-            <input type="text" id="menu-item-price" placeholder="Enter Menu Item Price">
-            <button id="btnAddMenuItem" type="submit">Add Menu Item</button>
-            <div class="menu-list">
-                <h3>Menu List</h3>
-                <ul id="menuList"></ul>
+    <div class="container" id="ShopOwnerCon">
+        <h2>Add New Item to Menu</h2>
+        <div class="form" id="ShopOwnerForm">
+            <label for="menuitemName" id="label">Menu Item Name</label>
+            <input type="text" id="menuitemName" placeholder="Enter Menu Item Name" required>
+
+            <label for="menuitemPrice" id="label">Menu Item Price</label>
+            <input type="number" id="menuitemPrice" placeholder="Enter Menu Item Price" required>
+
+            <label for="menuitemDescription" id="label">Menu Item Description</label>
+            <textarea id="menuitemDescription" placeholder="Ingredients are - eggs, Chicken, ..."></textarea>
+
+            <div class="checkbox-container">
+                <input type="checkbox" id="confirmAdd" required>
+                <label for="confirmAdd">Confirm to Add</label>
             </div>
+            <button id="btnAddMenuItem" type="submit">Add Menu Item</button>
         </div>
     </div>
 

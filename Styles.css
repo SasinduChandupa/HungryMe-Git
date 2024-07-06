@@ -155,14 +155,14 @@ body.dark-mode {
     padding-inline-start: 15px;
 }
 
-/* .Topic h1 {
+.Topic h1 {
     font-size: 80px;
     font-family:fantasy; 
     color: #ff0000;
     padding: auto;
     margin: 20px 0;
     margin-bottom: 0.5px;
-} */
+}
 
 #typewriter {
     font-size: 20px;
@@ -266,7 +266,6 @@ body.dark-mode {
 
 .container{
     cursor: pointer;
-    padding-right: 0px;
 }
 
 .custom-container {
@@ -590,3 +589,61 @@ body.dark-mode {
 
 /* ------------------------------------------------------------------ */
 /* ---------------------------Shop Owner---------------------------- */
+#ShopOwnerForm {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: fit-content;
+    font-size: larger;
+    border-radius: 10px;
+}
+
+#ShopOwnerForm label {
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+#ShopOwnerForm input, #ShopOwnerForm textarea {
+    margin-bottom: 15px;
+    padding: 10px;
+    font-size: large;
+    font-weight: bold;
+    border-radius: 5px;
+}
+
+#ShopOwnerForm input::placeholder, #ShopOwnerForm textarea::placeholder {
+    color: rgb(201, 201, 201);
+    font-weight: 500;
+}
+
+#ShopOwnerForm button {
+    padding: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 5px;
+    background-color: #4c00ff;
+    color: white;
+    cursor: pointer;
+}
+
+#ShopOwnerCon {
+    padding: 20px;
+    background-color: #858181;
+    border-radius: 10px;
+    height: fit-content;
+    width: fit-content;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+#ShopOwnerCon h2 {
+    font-weight: bold;
+}
+
+#menuList {
+    padding: 20px;
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
