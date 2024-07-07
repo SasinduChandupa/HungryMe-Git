@@ -647,3 +647,187 @@ body.dark-mode {
     border-radius: 10px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
+
+/* ------------------------------------------------------------------ */
+/* ---------------------------Admin---------------------------------- */
+
+#adminActions {
+    padding: 20px;
+    background-color: #d4d4d4;
+    border-radius: 10px;
+    height: fit-content;
+    width: fit-content;
+    overflow-x: auto;
+    display: block;
+}
+
+#showHandleDeliveryModal {
+    background-color: blue;
+    color: white;
+    display: block;
+    margin-bottom: 10px;
+    width: 100%;
+    padding: 10px;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+#showHandlePaymentModal {
+    background-color: #32ce6e;
+    color: white; 
+    display: block; 
+    width: 100%;
+    padding: 10px;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+
+#adminActions h2{
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+/* ----- */
+/* Modal header */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #dee2e6;
+    padding: 1rem;
+}
+
+/* Modal title */
+.modal-title {
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* Close button */
+.close {
+    border: none;
+    background: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    padding: 0;
+    cursor: pointer;
+}
+
+#ll{
+    font-weight: 700;
+}
+
+/* Modal body */
+.modal-body {
+    padding: 1rem;
+}
+
+/* Form group */
+.form-group {
+    margin-bottom: 1rem;
+}
+
+/* Form control */
+.form-control {
+    width: 100%;
+    padding: 0.375rem 0.75rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #495057;
+    background-color: #fff;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+/* Button */
+.btn {
+    display: inline-block;
+    font-weight: 400;
+    color: #212529;
+    text-align: center;
+    vertical-align: middle;
+    cursor: pointer;
+    font-weight: 500;
+    background-color: transparent;
+    border: 1px solid transparent;
+    padding: 0.375rem 0.75rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    border-radius: 0.25rem;
+    transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+/* Primary button */
+.btn-primary {
+    color: #fff;
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.btn-primary:hover {
+    color: #fff;
+    background-color: #0056b3;
+    border-color: #004085;
+}
+
+/* ------------------------------------------------------------------ */
+/* ---------------------------Delivery_Boy--------------------------- */
+
+.deliveryDetailsForm {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    width:fit-content;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #d4d4d4;
+    border-radius: 2%;
+    color: #141414;
+}
+
+.delivery-details {
+    width: 100%;
+}
+
+.form-group {
+    margin-bottom: 15px;
+    width: 100%;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 8px;
+    box-sizing: border-box;
+}
+
+.btn-delivered,
+.btn-nondelivered {
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 10px;
+    box-sizing: border-box;
+    cursor: pointer;
+}
+
+.btn-delivered {
+    background-color: #28a745;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+}
+
+.btn-nondelivered {
+    background-color: #dc3545;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+}
