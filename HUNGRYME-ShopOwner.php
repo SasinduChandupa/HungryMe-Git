@@ -20,11 +20,65 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $menuitemPrice = $_POST['menuitemPrice'];
     $menuitemDescription = $_POST['menuitemDescription'];
     $district = $_POST['menuitemDistrict'];
-    $menuitemImage = ""; // Image handling removed
+
+    // Handle file upload
+    $menuitemImage = "";
+    if (isset($_FILES['menuitemImage']) && $_FILES['menuitemImage']['error'] == UPLOAD_ERR_OK) {
+        $target_dir = "uploads/";
+        $target_file = $target_dir . basename($_FILES["menuitemImage"]["name"]);
+        $uploadOk = 1;
+        $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
+
+        // Check if directory exists
+        if (!is_dir($target_dir)) {
+            mkdir($target_dir, 0755, true); // Create directory if it doesn't exist
+        }
+
+        // Check if image file is a actual image or fake image
+        $check = getimagesize($_FILES["menuitemImage"]["tmp_name"]);
+        if ($check !== false) {
+            $uploadOk = 1;
+        } else {
+            echo "File is not an image.";
+            $uploadOk = 0;
+        }
+
+        // Check if file already exists
+        if (file_exists($target_file)) {
+            echo "Sorry, file already exists.";
+            $uploadOk = 0;
+        }
+
+        // Check file size
+        if ($_FILES["menuitemImage"]["size"] > 50000) { // 50KB limit
+            echo "Sorry, your file is too large.";
+            $uploadOk = 0;
+        }
+
+        // Allow certain file formats
+        if ($imageFileType != "jpg" && $imageFileType != "png" && $imageFileType != "jpeg" && $imageFileType != "gif") {
+            echo "Sorry, only JPG, JPEG, PNG & GIF files are allowed.";
+            $uploadOk = 0;
+        }
+
+        // Check if $uploadOk is set to 0 by an error
+        if ($uploadOk == 0) {
+            echo "Sorry, your file was not uploaded.";
+        // If everything is ok, try to upload file
+        } else {
+            if (move_uploaded_file($_FILES["menuitemImage"]["tmp_name"], $target_file)) {
+                $menuitemImage = $target_file; // Store the file path
+            } else {
+                echo "Sorry, there was an error uploading your file.";
+            }
+        }
+    } else {
+        echo "File not uploaded or upload error.";
+    }
 
     // Prepare and bind
-    $stmt = $conn->prepare("INSERT INTO menuitem (Description, Price, MenuName, District, Location) VALUES (?, ?, ?, ?, ?)");
-    $stmt->bind_param("sdsss", $menuitemDescription, $menuitemPrice, $menuitemName, $district, $menuitemLocation);
+    $stmt = $conn->prepare("INSERT INTO menuitem (Description, Price, MenuName, District, Location, ImagePath) VALUES (?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("sdssss", $menuitemDescription, $menuitemPrice, $menuitemName, $district, $menuitemLocation, $menuitemImage);
 
     if ($stmt->execute()) {
         echo "New menu item added successfully";
@@ -35,6 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $stmt->close();
     $conn->close();
 }
+
 ?>
 
 
@@ -49,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <link rel="C:\wamp64\www\Final\Images">
     <title>HUNGRYME_Shop_Owner</title>
     <link rel="stylesheet" type="text/css" href="Bootstrap/css/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="styles.css">
+    <link rel="stylesheet" type="text/css" href="style.css">
     <script type="text/javascript" src="Bootstrap/js/bootstrap.min.js"></script>
     <link rel="stylesheet" type="text/css"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -183,34 +238,35 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </div>
 
     <br><br>
-
+    <form class="form" id="ShopOwnerForm" method="POST" action="#" enctype="multipart/form-data">
     <!-- Shop Owner Menu Customization -->
     <div class="container" id="ShopOwnerCon">
-    <h2>Add New Item to Menu</h2>
+    <h2>Add New Item to Menu</h2> <br><br>
     <form class="form" id="ShopOwnerForm" method="POST" action="#">
-    <label for="menuitemName" id="label">Menu Item Name</label>
-    <input type="text" id="menuitemName" name="menuitemName" placeholder="Enter Menu Item Name" required>
+        <center>
+        <label for="menuitemName" id="label">Menu Item Name</label> <br>
+        <input type="text" id="menuitemName" name="menuitemName" placeholder="Enter Menu Item Name" required><br><br>
 
-    <label for="menuitemLocation" id="label">Location</label>
-    <input type="text" id="menuitemLocation" name="menuitemLocation" placeholder="Enter Location" required>
+        <label for="menuitemLocation" id="label">Location</label> <br>
+        <input type="text" id="menuitemLocation" name="menuitemLocation" placeholder="Enter Location" required><br><br>
 
-    <label for="menuitemDistrict" id="label">District</label>
-    <input type="text" id="menuitemDistrict" name="menuitemDistrict" placeholder="Enter District" required>
+        <label for="menuitemDistrict" id="label">District</label> <br>
+        <input type="text" id="menuitemDistrict" name="menuitemDistrict" placeholder="Enter District" required><br><br>
 
-    <label for="menuitemPrice" id="label">Menu Item Price</label>
-    <input type="number" id="menuitemPrice" name="menuitemPrice" placeholder="Enter Menu Item Price" required>
+        <label for="menuitemPrice" id="label">Menu Item Price</label> <br>
+        <input type="number" id="menuitemPrice" name="menuitemPrice" placeholder="Enter Menu Item Price" required><br><br>
 
-    <label for="menuitemDescription" id="label">Menu Item Description</label>
-    <textarea id="menuitemDescription" name="menuitemDescription" placeholder="Ingredients are - eggs, Chicken, ..." ></textarea>
+        <label for="menuitemDescription" id="label">Menu Item Description</label> <br>
+        <textarea id="menuitemDescription" name="menuitemDescription" placeholder="Ingredients are - eggs, Chicken, ..." ></textarea><br><br>
 
-    <label for="menuitemImage" id="label">Menu Item Image</label>
-    <input type="file" id="menuitemImage" name="menuitemImage" accept="image/*">
-
-    <div class="checkbox-container">
-        <input type="checkbox" id="confirmAdd" name="confirmAdd" required>
-        <label for="confirmAdd">Confirm to Add</label>
-    </div>
-    <button id="btnAddMenuItem" type="submit">Add Menu Item</button>
+        <label for="menuitemImage" id="label">Menu Item Image</label> <br>
+        <input type="file" id="menuitemImage" name="menuitemImage" accept="image/*">
+        <div class="checkbox-container">
+            <input type="checkbox" id="confirmAdd" name="confirmAdd" required>
+            <label for="confirmAdd">Confirm to Add</label> <br><br>
+        </div>
+        <button id="btnAddMenuItem" type="submit">Add Menu Item</button> <br><br>
+        </center>
     </form>
     </div>
 

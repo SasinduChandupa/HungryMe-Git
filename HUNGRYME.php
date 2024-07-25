@@ -49,20 +49,50 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         if ($result->num_rows > 0) {
             $row = $result->fetch_assoc();
+
             // Verify password
-            if (password_verify($login_pass, $row['password'])) {
+            if ((string)$row['password']==(string)$login_pass) {
                 // Password is correct, set session variables
                 $_SESSION['username'] = $login_name;
                 $_SESSION['role'] = $row['role'];
+
+                 // Redirect based on role
+            if ($row['role'] == 'shop_owner') {
+                header("Location: HUNGRYME-ShopOwner.php");
+
+            } else if ($row['role'] == 'delivery_boy') {
+                header("Location: HUNGRYME-DeliveryBoy.php");
+
+            } else if ($row['role'] == 'admin'){
+                header("Location: HUNGRYME-Admin.php");
+
+            }else if ($row['role'] == 'user'){
                 header("Location: HUNGRYME.php");
-                exit();
+
+            exit();
             } else {
                 echo "Invalid password!";
             }
-        } else {
-            echo "No user found with that username and role!";
+            } else {
+                echo "No user found with that username and role!";
+            }
         }
     }
+}
+
+if (isset($_POST['add_to_cart'])) {
+    $name = $conn->real_escape_string($_POST['name']);
+    $price = $conn->real_escape_string($_POST['price']);
+    $image = $conn->real_escape_string($_POST['image']);
+    $username = $_SESSION['username']; // Get the logged-in username from the session
+
+    $sql = "INSERT INTO cart (username, item_name, item_price, item_image) VALUES ('$username', '$name', '$price', '$image')";
+    if ($conn->query($sql) === TRUE) {
+        echo "Item added to cart successfully";
+    } else {
+        echo "Error: " . $sql . "<br>" . $conn->error;
+    }
+    exit();
 }
 
 $conn->close();
@@ -78,7 +108,7 @@ $conn->close();
     <link rel="icon" type="image/x-icon" href="title.jpg">
     <title>HUNGRYME</title>
     <link rel="stylesheet" type="text/css" href="Bootstrap/css/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="Styles.css">
+    <link rel="stylesheet" type="text/css" href="Style.css">
     <script type="text/javascript" src="Bootstrap/js/bootstrap.min.js"></script>
     <link rel="stylesheet" type="text/css"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -178,9 +208,9 @@ $conn->close();
                         <label for="login-role">Role</label>
                         <select id="login-role" name="login-role" class="form-control" required>
                             <option value="" disabled selected>Select your role</option>
-                            <option value="customer">Customer</option>
-                            <option value="shop-owner">Shop Owner</option>
-                            <option value="delivery">Delivery</option>
+                            <option value="user">User</option>
+                            <option value="shop_owner">ShopOwner</option>
+                            <option value="delivery_boy">delivery</option>
                             <option value="admin">Admin</option>
                         </select>
                         </div>
@@ -205,9 +235,8 @@ $conn->close();
                         <label for="signup-role">Role</label>
                         <select id="signup-role" name="signup-role" class="form-control" required>
                             <option value="" disabled selected>Select your role</option>
-                            <option value="customer">Customer</option>
-                            <option value="shop-owner">Shop Owner</option>
-                            <option value="delivery">Delivery</option>
+                            <option value="user">user</option>
+                            <option value="delivery_boy">delivery</option>
                             <option value="admin">Admin</option>
                         </select>
                         </div>
@@ -287,6 +316,7 @@ $conn->close();
                         </script>
                     </div>
                     <br><br>
+                    <center>
                     <form id="food-search-form">
                         <div class="di-flex">
                             <div class="form-group">
@@ -334,6 +364,7 @@ $conn->close();
                             </div>
                         </div>
                     </form>
+                    </center>
                 </div>
             </div>
             <div class="col-sm-4">
@@ -343,16 +374,17 @@ $conn->close();
             </div>
         </div>
     </div>
-
+    <br><br>
     <div class="table">
         <table id="shop-table">
             <thead>
                 <tr>
                     <th>Shop Name</th>
                     <th>Location</th>
-                    <th>price</th>
+                    <th>Price</th>
                     <th>Contact</th>
                     <th>Image</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody id="shop-table-body">
@@ -360,6 +392,8 @@ $conn->close();
             </tbody>
         </table>
     </div>
+    
+    <button onclick="goToCart()" id="ShopTablebtn">Go to Cart</button>
 
     <script>
         document.getElementById('food-search-form').addEventListener('submit', function(event) {
@@ -372,13 +406,11 @@ $conn->close();
         });
 
         function updateTable(food, district) {
-            // Example logic to generate specific image name based on selected values
-            var imageName = `${district.slice(0, 2)}${food.charAt(0)}.jpg`;
-            
             // Example data: replace with actual data retrieval logic
             var shops = [
                 { name: 'Aluroma', location: 'Dewata', price: 'Rs:990.00', contact: '1234567890', image: 'GaFriedRice.jpg', food: 'rice', district: 'Galle' },
                 { name: 'The Kitchen', location: 'Kotte', price: 'Rs:780.00', contact: '0987654321', image: 'CoFriedRice.jpg', food: 'rice', district: 'Colombo' },
+                { name: 'W15', location: 'Weligama', price: 'Rs:1100.00', contact: '123895645', image: 'W15.jpg', food: 'rice', district: 'Galle' },
                 // Add more shop data as needed
             ];
 
@@ -398,12 +430,33 @@ $conn->close();
                     <td>${shop.price}</td>
                     <td>${shop.contact}</td>
                     <td><img src="${shop.image}" alt="${shop.name}" style="width: 100px;"></td>
+                    <td><button onclick="addToCart('${shop.name}', '${shop.price}', '${shop.image}')">Add to Cart</button></td>
                 `;
                 tableBody.appendChild(row);
             });
         }
-    </script>
 
+        function addToCart(name, price, image) {
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', 'HungryMe.php', true); // Send data to the same page
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === XMLHttpRequest.DONE) {
+                    if (xhr.status === 200) {
+                        alert('Added ' + name + ' (' + price + ') to cart!');
+                    } else {
+                        alert('Failed to add to cart: ' + xhr.responseText);
+                    }
+                }
+            };
+            // Send data as URL encoded format
+            xhr.send('add_to_cart=true&name=' + encodeURIComponent(name) + '&price=' + encodeURIComponent(price) + '&image=' + encodeURIComponent(image));
+        }
+
+        function goToCart() {
+    window.location.href = 'HUNGRYME-Cart.php';
+    }
+    </script>
 
 
     <br>

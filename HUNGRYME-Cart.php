@@ -18,7 +18,7 @@ if ($conn->connect_error) {
 }
 
 if (!isset($_SESSION['username'])) {
-    header("Location: HUNGRYME.php"); // Redirect to login page if not logged in
+    header("Location: HUNGRYME-Cart.php"); // Redirect to login page if not logged in
     exit();
 }
 
@@ -38,6 +38,14 @@ $result = $conn->query($sql);
     <title>Cart - HUNGRYME</title>
     <link rel="stylesheet" type="text/css" href="Bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="Styles.css">
+    <!-- <style>.Topic h1 {
+    font-size: 80px;
+    font-family:fantasy; 
+    color: #0dac9e !important;
+    padding: auto;
+    margin: 20px 0;
+    margin-bottom: 0.5px; 
+}</style>-->
 </head>
 <!DOCTYPE html>
 <html lang="en">
@@ -48,7 +56,7 @@ $result = $conn->query($sql);
     <link rel="icon" type="image/x-icon" href="title.jpg">
     <title>HUNGRYME</title>
     <link rel="stylesheet" type="text/css" href="Bootstrap/css/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="Styles.css">
+    <link rel="stylesheet" type="text/css" href="Style.css">
     <script type="text/javascript" src="Bootstrap/js/bootstrap.min.js"></script>
     <link rel="stylesheet" type="text/css"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -196,15 +204,15 @@ $result = $conn->query($sql);
         </div>
     </div>
 
-    <div class="container">
+    <div class="container" id="addtoCart">
         <h2>Cart Items</h2>
-        <table class="table table-bordered">
+        <table class="table table-bordered" id="cartTable">
             <thead>
                 <tr>
-                    <th>Item Name</th>
-                    <th>Item Price</th>
-                    <th>Item Image</th>
-                    <th>Action</th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -224,8 +232,8 @@ $result = $conn->query($sql);
                 ?>
             </tbody>
         </table>
-        <button onclick="window.location.href='HUNGRYME.php'">Continue Shopping</button>
-        <button onclick="window.location.href='HUNGRYME.php'">Continue Shopping</button>
+        <button onclick="window.location.href='HUNGRYME.php'" id="continu">Continue Shopping</button>
+        <button onclick="window.location.href='HUNGRYME.php'" id="Place">Place Order</button>
     </div>
 
     <script>
