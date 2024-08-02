@@ -56,7 +56,7 @@ $result = $conn->query($sql);
     <link rel="icon" type="image/x-icon" href="title.jpg">
     <title>HUNGRYME</title>
     <link rel="stylesheet" type="text/css" href="Bootstrap/css/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="Style.css">
+    <link rel="stylesheet" type="text/css" href="HStylee.css">
     <script type="text/javascript" src="Bootstrap/js/bootstrap.min.js"></script>
     <link rel="stylesheet" type="text/css"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -121,12 +121,10 @@ $result = $conn->query($sql);
                 <img src="HUNGRYME(txt).png" height="40px" alt="Logo">
             </div>
             <ul class="navbar-nav ml-auto">
-                <li id="l1"><a class="nav-link" href="#home">Home</a></li>
+                <li id="l1"><a class="nav-link" href="HUNGRYME.php">Home</a></li>
                 <li id="l2"><a class="nav-link" href="#footer">About us</a></li>
                 <li id="l3"><a class="nav-link" href="https://wa.me/94722714507">Contact us</a></li>
                 <li id="l4"><a class="nav-link" href="https://maps.app.goo.gl/5sHYmUQesEMHQfWNA">Main Branch</a></li>
-                <li id="l5"><button id="show-popup1" class="login-button"><i class="fa-solid fa-user fa-xl"></i></button></li>
-                <li id="l6"><button id="navcart" class="cart"><i class="fa-solid fa-cart-shopping fa-xl"></i></button></li>
                 <li id="l7">
                     <div class="buttonDark"> <button onclick="DarkMode()">
                             <i class="fa-solid fa-moon fa-xl"></i>

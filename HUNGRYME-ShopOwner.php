@@ -1,5 +1,8 @@
 <?php
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+// Start session to access session variables
+session_start();
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['addMenuItem'])) {
     // Database connection
     $servername = "localhost";
     $username = "root";
@@ -15,6 +18,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     // Set parameters and execute
+    $shopID = $_POST['ShopOwnerID'];
+    $shopname = $_POST['ShopOwnerName'];
     $menuitemName = $_POST['menuitemName'];
     $menuitemLocation = $_POST['menuitemLocation'];
     $menuitemPrice = $_POST['menuitemPrice'];
@@ -77,8 +82,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     // Prepare and bind
-    $stmt = $conn->prepare("INSERT INTO menuitem (Description, Price, MenuName, District, Location, ImagePath) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("sdssss", $menuitemDescription, $menuitemPrice, $menuitemName, $district, $menuitemLocation, $menuitemImage);
+    $stmt = $conn->prepare("INSERT INTO menuitem (ShopID, ShopName, Description, Price, MenuName, District, Location, ImagePath) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("sssdssss", $shopID, $shopname, $menuitemDescription, $menuitemPrice, $menuitemName, $district, $menuitemLocation, $menuitemImage);
 
     if ($stmt->execute()) {
         echo "New menu item added successfully";
@@ -90,8 +95,73 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $conn->close();
 }
 
-?>
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['removeMenuItem'])) {
+    // Database connection
+    $servername = "localhost";
+    $username = "root";
+    $password = "";
+    $dbname = "hungrymedb";
 
+    // Create connection
+    $conn = new mysqli($servername, $username, $password, $dbname);
+
+    // Check connection
+    if ($conn->connect_error) {
+        die("Connection failed: " . $conn->connect_error);
+    }
+
+    // Set parameters and execute
+    $menuItemID = $_POST['menuItemID'];
+
+    // Prepare and bind
+    $stmt = $conn->prepare("DELETE FROM menuitem WHERE MenuItemID = ?");
+    $stmt->bind_param("i", $menuItemID);
+
+    if ($stmt->execute()) {
+        echo "Menu item removed successfully";
+    } else {
+        echo "Error: " . $stmt->error;
+    }
+
+    $stmt->close();
+    $conn->close();
+}
+
+// Fetching menu items for the logged-in shop owner
+function fetchMenuItems($shopID) {
+    $servername = "localhost";
+    $username = "root";
+    $password = "";
+    $dbname = "hungrymedb";
+
+    // Create connection
+    $conn = new mysqli($servername, $username, $password, $dbname);
+
+    // Check connection
+    if ($conn->connect_error) {
+        die("Connection failed: " . $conn->connect_error);
+    }
+
+    $sql = "SELECT MenuItemID, Description, Price, MenuName FROM menuitem WHERE ShopID = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("s", $shopID);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $menuItems = [];
+    while ($row = $result->fetch_assoc()) {
+        $menuItems[] = $row;
+    }
+
+    $stmt->close();
+    $conn->close();
+
+    return $menuItems;
+}
+
+$shopID = isset($_COOKIE['password']) ? $_COOKIE['password'] : ''; // Assuming password is used as ShopID
+$menuItems = fetchMenuItems($shopID);
+?>
 
 
 <!DOCTYPE html>
@@ -104,7 +174,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <link rel="C:\wamp64\www\Final\Images">
     <title>HUNGRYME_Shop_Owner</title>
     <link rel="stylesheet" type="text/css" href="Bootstrap/css/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="style.css">
+    <link rel="stylesheet" type="text/css" href="HStylee.css">
     <script type="text/javascript" src="Bootstrap/js/bootstrap.min.js"></script>
     <link rel="stylesheet" type="text/css"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -231,45 +301,176 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     <!-- Display the menu list -->
     <div class="container" id="menuList">
-        <h3>Menu List</h3>
-        <ul id="menuItemsList">
-            <!-- Menu items will be dynamically inserted here -->
-        </ul>
+    <h3>Menu List</h3>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Price</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($menuItems as $item) : ?>
+                <tr>
+                    <td><?php echo htmlspecialchars($item['MenuItemID']); ?></td>
+                    <td><?php echo htmlspecialchars($item['MenuName']); ?></td>
+                    <td><?php echo htmlspecialchars($item['Description']); ?></td>
+                    <td><?php echo htmlspecialchars($item['Price']); ?></td>
+                    <td>
+                        <!-- Removed the edit button -->
+                        <form method="POST" action="#" style="display:inline;">
+                            <input type="hidden" name="menuItemID" value="<?php echo $item['MenuItemID']; ?>">
+                            <input type="hidden" name="removeMenuItem" value="1">
+                            <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                        </form>
+                        <td>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
     </div>
+
 
     <br><br>
+    <!-- Trigger Button -->
     <form class="form" id="ShopOwnerForm" method="POST" action="#" enctype="multipart/form-data">
-    <!-- Shop Owner Menu Customization -->
-    <div class="container" id="ShopOwnerCon">
-    <h2>Add New Item to Menu</h2> <br><br>
-    <form class="form" id="ShopOwnerForm" method="POST" action="#">
-        <center>
-        <label for="menuitemName" id="label">Menu Item Name</label> <br>
-        <input type="text" id="menuitemName" name="menuitemName" placeholder="Enter Menu Item Name" required><br><br>
+    <!-- Add Item Button -->
+    <button id="openAddModal">Add Item</button>
 
-        <label for="menuitemLocation" id="label">Location</label> <br>
-        <input type="text" id="menuitemLocation" name="menuitemLocation" placeholder="Enter Location" required><br><br>
+    <!-- Modal Structure for Adding -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <span class="close-add">&times;</span>
+            <div class="container" id="ShopOwnerCon">
+                <h2>Add New Item to Menu</h2> <br><br>
+                <form class="form" id="ShopOwnerForm" method="POST" action="#" enctype="multipart/form-data">
+                    <input type="hidden" name="addMenuItem" value="1">
+                    <label for="ShopOwnerID">Shop Owner ID</label><br>
+                    <input type="text" id="ShopOwnerID" name="ShopOwnerID" readonly value="<?php echo $_COOKIE['password'] ; ?>"><br><br>
 
-        <label for="menuitemDistrict" id="label">District</label> <br>
-        <input type="text" id="menuitemDistrict" name="menuitemDistrict" placeholder="Enter District" required><br><br>
+                    <label for="ShopOwnerName">Shop Owner Name</label><br>
+                    <input type="text" id="ShopOwnerName" name="ShopOwnerName" readonly value="<?php echo $_COOKIE['username'] ; ?>"><br><br>
 
-        <label for="menuitemPrice" id="label">Menu Item Price</label> <br>
-        <input type="number" id="menuitemPrice" name="menuitemPrice" placeholder="Enter Menu Item Price" required><br><br>
+                    <label for="menuitemName" id="label">Menu Item Name</label> <br>
+                    <input type="text" id="menuitemName" name="menuitemName" placeholder="Enter Menu Item Name" required><br><br>
 
-        <label for="menuitemDescription" id="label">Menu Item Description</label> <br>
-        <textarea id="menuitemDescription" name="menuitemDescription" placeholder="Ingredients are - eggs, Chicken, ..." ></textarea><br><br>
+                    <label for="menuitemLocation" id="label">Location</label> <br>
+                    <input type="text" id="menuitemLocation" name="menuitemLocation" placeholder="Enter Location" required><br><br>
 
-        <label for="menuitemImage" id="label">Menu Item Image</label> <br>
-        <input type="file" id="menuitemImage" name="menuitemImage" accept="image/*">
-        <div class="checkbox-container">
-            <input type="checkbox" id="confirmAdd" name="confirmAdd" required>
-            <label for="confirmAdd">Confirm to Add</label> <br><br>
+                    <label for="menuitemDistrict" id="label">District</label> <br>
+                    <input type="text" id="menuitemDistrict" name="menuitemDistrict" placeholder="Enter District" required><br><br>
+
+                    <label for="menuitemPrice" id="label">Menu Item Price</label> <br>
+                    <input type="number" id="menuitemPrice" name="menuitemPrice" placeholder="Enter Menu Item Price" required><br><br>
+
+                    <label for="menuitemDescription" id="label">Menu Item Description</label> <br>
+                    <textarea id="menuitemDescription" name="menuitemDescription" placeholder="Ingredients are - eggs, Chicken, ..." ></textarea><br><br>
+
+                    <label for="menuitemImage" id="label">Menu Item Image</label> <br>
+                    <input type="file" id="menuitemImage" name="menuitemImage" accept="image/*">
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="confirmAdd" name="confirmAdd" required>
+                        <label for="confirmAdd">Confirm to Add</label> <br><br>
+                    </div>
+                    <button id="btnAddMenuItem" type="submit">Add Menu Item</button> <br><br>
+                </form>
+            </div>
         </div>
-        <button id="btnAddMenuItem" type="submit">Add Menu Item</button> <br><br>
-        </center>
-    </form>
     </div>
 
+    <!-- Edit Item Button -->
+    <button id="openEditModal">Edit Item</button>
+
+    <!-- Modal Structure for Editing -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close-edit">&times;</span>
+            <div class="container" id="EditItemCon">
+                <h2>Edit Menu Item</h2> <br><br>
+                <form class="form" id="EditItemForm" method="POST" action="update_item.php" enctype="multipart/form-data">
+                    <input type="hidden" name="updateMenuItem" value="1">
+                    <input type="hidden" id="itemId" name="itemId" value="">
+
+                    <label for="MenuItemID">Menu Item ID</label><br>
+                    <input type="text" id="MenuItemID" name="MenuItemID" placeholder="Enter Menu Item ID" required><br><br>
+
+                    <label for="ShopOwnerID">Shop Owner ID</label><br>
+                    <input type="text" id="ShopOwnerID" name="ShopOwnerID" readonly value="<?php echo $_COOKIE['password']; ?>"><br><br>
+
+                    <label for="ShopOwnerName">Shop Owner Name</label><br>
+                    <input type="text" id="ShopOwnerName" name="ShopOwnerName" readonly value="<?php echo $_COOKIE['username']; ?>"><br><br>
+
+                    <label for="menuitemName" id="label">Menu Item Name</label> <br>
+                    <input type="text" id="menuitemName" name="menuitemName" placeholder="Enter Menu Item Name" required><br><br>
+
+                    <label for="menuitemLocation" id="label">Location</label> <br>
+                    <input type="text" id="menuitemLocation" name="menuitemLocation" placeholder="Enter Location" required><br><br>
+
+                    <label for="menuitemDistrict" id="label">District</label> <br>
+                    <input type="text" id="menuitemDistrict" name="menuitemDistrict" placeholder="Enter District" required><br><br>
+
+                    <label for="menuitemPrice" id="label">Menu Item Price</label> <br>
+                    <input type="number" id="menuitemPrice" name="menuitemPrice" placeholder="Enter Menu Item Price" required><br><br>
+
+                    <label for="menuitemDescription" id="label">Menu Item Description</label> <br>
+                    <textarea id="menuitemDescription" name="menuitemDescription" placeholder="Ingredients are - eggs, Chicken, ..."></textarea><br><br>
+
+                    <label for="menuitemImage" id="label">Menu Item Image</label> <br>
+                    <input type="file" id="menuitemImage" name="menuitemImage" accept="image/*">
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="confirmEdit" name="confirmEdit" required>
+                        <label for="confirmEdit">Confirm to Update</label> <br><br>
+                    </div>
+                    <button id="btnUpdateMenuItem" type="submit">Update Menu Item</button> <br><br>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Get the Add Item modal element
+        var addModal = document.getElementById("addModal");
+        var openAddModalBtn = document.getElementById("openAddModal");
+        var closeAddSpan = document.getElementsByClassName("close-add")[0];
+
+        // Get the Edit Item modal element
+        var editModal = document.getElementById("editModal");
+        var openEditModalBtn = document.getElementById("openEditModal");
+        var closeEditSpan = document.getElementsByClassName("close-edit")[0];
+
+        // Open Add Item modal
+        openAddModalBtn.onclick = function() {
+            addModal.style.display = "block";
+        }
+
+        // Close Add Item modal
+        closeAddSpan.onclick = function() {
+            addModal.style.display = "none";
+        }
+
+        // Open Edit Item modal
+        openEditModalBtn.onclick = function() {
+            editModal.style.display = "block";
+        }
+
+        // Close Edit Item modal
+        closeEditSpan.onclick = function() {
+            editModal.style.display = "none";
+        }
+
+        // Close modal if clicked outside of modal content
+        window.onclick = function(event) {
+            if (event.target == addModal) {
+                addModal.style.display = "none";
+            }
+            if (event.target == editModal) {
+                editModal.style.display = "none";
+            }
+        }
+    </script>
 
     <br><br>
     <!-- Footer -->

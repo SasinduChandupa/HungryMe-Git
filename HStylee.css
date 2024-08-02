@@ -825,6 +825,54 @@ body.dark-mode {
 
 /* ------------------------------------------------------------------ */
 /* ---------------------------Shop Owner---------------------------- */
+
+#openModal {
+    background-color: #4CAF50;
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    width:fit-content;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 20px 0;
+    margin-left: 20px; 
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+#openModal:hover {
+    background-color: #45a049;
+}
+
+
+.modal-content {
+    background-color: #ffffff;
+    margin: 5% auto; 
+    padding: 20px;
+    border: 1px solid #888;
+    width:fit-content; 
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); 
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
 #ShopOwnerForm {
     display: flex;
     flex-direction: column;
@@ -883,6 +931,8 @@ body.dark-mode {
     border-radius: 10px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
+
+
 
 /* ------------------------------------------------------------------ */
 /* ---------------------------Admin---------------------------------- */
