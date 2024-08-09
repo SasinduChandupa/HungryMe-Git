@@ -82,8 +82,6 @@ $conn->close();
 ?>
 
 
-
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -94,7 +92,7 @@ $conn->close();
     <link rel="C:\wamp64\www\Final\Images">
     <title>HUNGRYME_Admin</title>
     <link rel="stylesheet" type="text/css" href="Bootstrap/css/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="HStylee.css">
+    <link rel="stylesheet" type="text/css" href="H_Style.css">
     <script type="text/javascript" src="Bootstrap/js/bootstrap.min.js"></script>
     <link rel="stylesheet" type="text/css"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -223,8 +221,6 @@ $conn->close();
     </div>
 
     <!-- Handle Delivery Modal -->
-    <!-- Handle Delivery Modal -->
-    <!-- Handle Delivery Modal -->
     <div class="modal fade" id="handleDeliveryModal" tabindex="-1" role="dialog"
         aria-labelledby="handleDeliveryModalLabel" aria-hidden="true">
         <div class="modal-dialog" role="document">
@@ -287,7 +283,9 @@ $conn->close();
             </div>
         </div>
     </div>
+
     <br><br>
+
     <center>
     <div class="form-container" id="Adminf">
         <h2>Add Shop</h2>
@@ -303,9 +301,96 @@ $conn->close();
             <input type="submit" value="Add Shop" class="submit-button">
         </form>
     </div>
+    <br><br>
+    <center>
+    <div class="form-container" id="Adminf">
+    <h2>Add Delivery Boy</h2>
+        <form action="HUNGRYME-deliveryAdd.php" method="POST">
+            <label for="rider-name">Rider Name</label>
+            <input type="text" id="rider-name" name="rider-name" required>
+            <input type="submit" value="Add Rider" class="submit-button">
+        </form>
+    </div>
+
+
+    <br><br>
+
+    
+    <div class="form-pricechange" id="priceChange">
+        <h4>Customization Price Change</h4>
+        <!-- Buttons to trigger modals -->
+        <button style="width: 100%; background-color: yellow; font-weight: 700; border: none; padding: 10px; border-radius: 10px; margin-bottom: 10px; cursor: pointer;" id="showHandleRice" data-toggle="modal" data-target="#RiceModal">Customize Extra Price</button>
+
+        <!-- Handle Rice Payment Modal -->
+        <div class="modal fade" id="RiceModal" tabindex="-1" role="dialog" aria-labelledby="RiceModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="RiceModalLabel">Rice Customize</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <form id="RiceForm" method="post" action="customize.php">
+                        <input type="hidden" name="btnID" value="Rice">
+                        <div class="modal-body">
+                            <label for="riceVegetable">Vegetable</label>
+                            <input type="number" step="0.01" class="form-control" id="riceVegetable" name="vegetable">
+
+                            <label for="riceChicken">Chicken</label>
+                            <input type="number" step="0.01" class="form-control" id="riceChicken" name="Chicken">
+                            
+                            <label for="riceBeef">Beef</label>
+                            <input type="number" step="0.01" class="form-control" id="riceBeef" name="Beef">
+                            
+                            <label for="riceMutton">Mutton</label>
+                            <input type="number" step="0.01" class="form-control" id="riceMutton" name="Mutton">
+                        
+                            <label for="riceSauce">Sauce</label>
+                            <input type="number" step="0.01" class="form-control" id="riceSauce" name="Sauce">
+                        
+                            <label for="riceEgg">Egg</label>
+                            <input type="number" step="0.01" class="form-control" id="riceEgg" name="Egg"> 
+                            
+                            <hr>
+
+                            <h5 class="modal-title" id="PizzaModalLabel">Pizza Customize</h5>
+
+                            <label for="SaucePizza">Pizza Sauce</label>
+                            <input type="text" class="form-control" id="SaucePizza" name="SaucePizza">
+
+                            <label for="pizzaCheese">Cheese</label>
+                            <input type="text" class="form-control" id="pizzaCheese" name="Cheese">
+
+                            <label for="pizzameet">Meat</label>
+                            <input type="text" class="form-control" id="pizzameet" name="Meat">
+
+
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" style="width: 100%;" name="update" value="Rice" onclick="submitForm()">Update</button>
+                        </div>
+                    </form>
+
+                    <script>
+                    function submitForm() {
+                        document.getElementById('RiceForm').submit();
+                    }
+                    </script>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     </center>
 
     <br><br>
+    <!-- jQuery, Popper.js, and Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
     <!-- Footer -->
     <footer>
         <div class="text-center text-lg-start" id="footer">

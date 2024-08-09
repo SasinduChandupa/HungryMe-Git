@@ -607,7 +607,6 @@ body.dark-mode {
 }
 
 
-
 /* ------------------------------------------------------------------ */
 /* ---------------------------Add To CART---------------------------- */
 #cart {
@@ -821,6 +820,16 @@ body.dark-mode {
     }
 }
 
+#customizationModal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height:fit-content;
+    overflow: auto;
+}
 
 
 /* ------------------------------------------------------------------ */
@@ -1091,6 +1100,16 @@ body.dark-mode {
     border-radius: 10px;
 }
 
+#priceChange {
+    justify-content: center;
+    align-items: center;
+    color: #222;
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    width:max-content;
+}
 
 /* ------------------------------------------------------------------ */
 /* ---------------------------Delivery_Boy--------------------------- */

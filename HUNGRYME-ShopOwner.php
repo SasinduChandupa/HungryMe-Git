@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['addMenuItem'])) {
         }
 
         // Check file size
-        if ($_FILES["menuitemImage"]["size"] > 50000) { // 50KB limit
+        if ($_FILES["menuitemImage"]["size"] > 500000) { // 50KB limit
             echo "Sorry, your file is too large.";
             $uploadOk = 0;
         }
@@ -174,7 +174,7 @@ $menuItems = fetchMenuItems($shopID);
     <link rel="C:\wamp64\www\Final\Images">
     <title>HUNGRYME_Shop_Owner</title>
     <link rel="stylesheet" type="text/css" href="Bootstrap/css/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="HStylee.css">
+    <link rel="stylesheet" type="text/css" href="H_Style.css">
     <script type="text/javascript" src="Bootstrap/js/bootstrap.min.js"></script>
     <link rel="stylesheet" type="text/css"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -355,8 +355,14 @@ $menuItems = fetchMenuItems($shopID);
                     <label for="ShopOwnerName">Shop Owner Name</label><br>
                     <input type="text" id="ShopOwnerName" name="ShopOwnerName" readonly value="<?php echo $_COOKIE['username'] ; ?>"><br><br>
 
-                    <label for="menuitemName" id="label">Menu Item Name</label> <br>
-                    <input type="text" id="menuitemName" name="menuitemName" placeholder="Enter Menu Item Name" required><br><br>
+                    <select id="menuitemName" name="menuitemName" required>
+                    <option value="" disabled selected>Select food 🔽</option>
+                        <option value="Kottu">Kottu</option>
+                        <option value="Rice">Rice</option>
+                        <option value="Pizza">Pizza</option>
+                        <option value="Beverage">Beverage</option>
+                        <option value="Noodles">Noodles</option>
+                    </select> <br><br>
 
                     <label for="menuitemLocation" id="label">Location</label> <br>
                     <input type="text" id="menuitemLocation" name="menuitemLocation" placeholder="Enter Location" required><br><br>
@@ -421,6 +427,7 @@ $menuItems = fetchMenuItems($shopID);
 
                     <label for="menuitemImage" id="label">Menu Item Image</label> <br>
                     <input type="file" id="menuitemImage" name="menuitemImage" accept="image/*">
+                    
                     <div class="checkbox-container">
                         <input type="checkbox" id="confirmEdit" name="confirmEdit" required>
                         <label for="confirmEdit">Confirm to Update</label> <br><br>
@@ -430,6 +437,7 @@ $menuItems = fetchMenuItems($shopID);
             </div>
         </div>
     </div>
+
     <script>
         // Get the Add Item modal element
         var addModal = document.getElementById("addModal");

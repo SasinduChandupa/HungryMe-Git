@@ -1,3 +1,126 @@
+<?php
+$servername = "localhost";
+$username = "root";
+$password = "";
+$dbname = "hungrymedb";
+
+$conn = new mysqli($servername, $username, $password, $dbname);
+
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $totalAmount = isset($_POST['totalAmount']) ? floatval($_POST['totalAmount']) : 0.0;
+    $name = isset($_POST['name']) ? $conn->real_escape_string($_POST['name']) : '';
+    $address = isset($_POST['address']) ? $conn->real_escape_string($_POST['address']) : '';
+    $phonenum = isset($_POST['phonenum']) ? $conn->real_escape_string($_POST['phonenum']) : '';
+    $email = isset($_POST['email']) ? $conn->real_escape_string($_POST['email']) : '';
+    $landmark = isset($_POST['landmark']) ? $conn->real_escape_string($_POST['landmark']) : '';
+    $paymentMethod = isset($_POST['paymentMethod']) ? $conn->real_escape_string($_POST['paymentMethod']) : '';
+    $orderDate = date("Y-m-d H:i:s");
+
+    if (empty($name) || empty($address) || empty($phonenum) || empty($email) || empty($paymentMethod)) {
+        echo "Please fill in all required fields.";
+    } else {
+        $user = isset($_COOKIE['username']) ? $_COOKIE['username'] : null;
+        if ($user) {
+            // Fetch shop names and item names from the cart
+            $sql = "SELECT shop_name, item_name FROM cart WHERE username = ?";
+            if ($stmt = $conn->prepare($sql)) {
+                $stmt->bind_param("s", $user);
+                $stmt->execute();
+                $result = $stmt->get_result();
+
+                $shopNames = [];
+                $itemNames = [];
+
+                while ($row = $result->fetch_assoc()) {
+                    $shopNames[] = $row['shop_name'];
+                    $itemNames[] = $row['item_name'];
+                }
+
+                $shopNamesStr = implode(', ', array_unique($shopNames));
+                $itemNamesStr = implode(', ', $itemNames);
+
+                // Prepare an SQL statement for insertion
+                $stmtInsert = $conn->prepare("INSERT INTO `order` (TotAmount, shopname, menuitem, Name, Address, PhoneNo, Email, Landmarks, PaymentMethod, OrderDate) 
+                                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                if ($stmtInsert === false) {
+                    die("Prepare failed: " . $conn->error);
+                }
+
+                $stmtInsert->bind_param("dsssssssss", $totalAmount, $shopNamesStr, $itemNamesStr, $name, $address, $phonenum, $email, $landmark, $paymentMethod, $orderDate);
+
+                if ($stmtInsert->execute()) {
+                    echo "New record created successfully.<br>";
+                } else {
+                    echo "Error: " . $stmtInsert->error . "<br>";
+                }
+
+                $stmtInsert->close();
+
+                // Optionally clear the cart after processing the order
+                // $conn->query("DELETE FROM cart WHERE username = '$user'");
+
+                $stmt->close();
+            } else {
+                echo "Error preparing statement: " . $conn->error;
+            }
+        } else {
+            echo "Username cookie is not set.";
+        }
+    }
+}
+
+$conn->close();
+?>
+
+
+
+<?php
+// Database connection
+$servername = "localhost";
+$username = "root";
+$password = "";
+$dbname = "hungrymedb";
+
+$conn = new mysqli($servername, $username, $password, $dbname);
+
+// Check connection
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+// Get username from cookie
+$user = isset($_COOKIE['username']) ? $_COOKIE['username'] : null;
+
+if ($user) {
+    // Query to get data from the cart table based on the username
+    $sql = "SELECT shop_name, item_name FROM cart WHERE username = ?";
+    
+    // Prepare the statement
+    if ($stmt = $conn->prepare($sql)) {
+        // Bind parameters
+        $stmt->bind_param("s", $user);
+        
+        // Execute the statement
+        $stmt->execute();
+        
+        // Get result
+        $result = $stmt->get_result();
+    } else {
+        // Handle SQL prepare error
+        echo "Error preparing statement: " . $conn->error;
+        exit;
+    }
+} else {
+    // Handle missing username
+    echo "Username cookie is not set.";
+    exit;
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -7,7 +130,7 @@
     <link rel="icon" type="image/x-icon" href="title.jpg">
     <title>HUNGRYME Order</title>
     <link rel="stylesheet" type="text/css" href="Bootstrap/css/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="HStylee.css">
+    <link rel="stylesheet" type="text/css" href="H_Style.css">
     <script type="text/javascript" src="Bootstrap/js/bootstrap.min.js"></script>
     <link rel="stylesheet" type="text/css"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -64,7 +187,6 @@
                 <li id="l2"><a class="nav-link" href="#footer">About us</a></li>
                 <li id="l3"><a class="nav-link" href="https://wa.me/94722714507">Contact us</a></li>
                 <li id="l4"><a class="nav-link" href="https://maps.app.goo.gl/5sHYmUQesEMHQfWNA">Main Branch</a></li>
-                <li id="l6"><button id="navcart" class="cart"><i class="fa-solid fa-cart-shopping fa-xl"></i></button></li>
                 <li id="l7">
                     <div class="buttonDark"> <button onclick="DarkMode()">
                             <i class="fa-solid fa-moon fa-xl"></i>
@@ -128,54 +250,83 @@
         </script>
     </div>
     <br><br>
+    
     <div class="container" id="containerPayment">
-        <h2 class="text-center">Enter your informations</h2>
-        <form>
-            <div class="form-group">
-                <label for="name">Name:</label>
-                <input type="text" class="form-control" id="name" placeholder="Enter your name" required>
-            </div>
-            <div class="form-group">
-                <label for="address">Address:</label>
-                <input type="text" class="form-control" id="address" placeholder="Enter your address" required>
-            </div>
-            <div class="form-group">
-                <label for="OrderItemId">Phone Number:</label>
-                <input type="text" class="form-control" id="phonenum" placeholder="Enter your phone number" required>
-            </div>
-            <div class="form-group">
-                <label for="OrderItemId">Email:</label>
-                <input type="text" class="form-control" id="phonenum" placeholder="Enter your email" required>
-            </div>
-            <div class="form-group">
-                <label for="landmark">Landmark:</label>
-                <textarea class="form-control" id="landmark" placeholder="e.g:- in front of Train Station"></textarea>
-            </div>
+    <button onclick="window.location.href='HUNGRYME-Cart'"  id="navcart" class="cart"><i class="fa-solid fa-cart-shopping fa-xl"></i></button>
+    <h2 class="text-center">Enter your information</h2>
+    <form method="POST" action="#">
+        <div class="form-group">
+            <label for="tot"><b>Total</b></label>
+            <input type="text" class="form-control" id="tot" name="totalAmount" readonly value="<?php echo htmlspecialchars($_COOKIE['totalAmount']); ?>">
+        </div>
+        <div class="form-group">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Shop Name</th>
+                        <th>Items</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php while ($row = $result->fetch_assoc()): ?>
+                    <tr>
+                        <td><?php echo htmlspecialchars($row['shop_name']); ?></td>
+                        <td><?php echo htmlspecialchars($row['item_name']); ?></td>
+                    </tr>
+                    <?php endwhile; ?>
+                </tbody>
+            </table>
+        </div>
+        <div class="form-group">
+            <label for="name"><b>Name:</b></label>
+            <input type="text" class="form-control" id="name" name="name" readonly value="<?php echo htmlspecialchars($_COOKIE['username']); ?>">
+        </div>
+        <div class="form-group">
+            <label for="address"><b>Address:</b></label>
+            <input type="text" class="form-control" id="address" name="address" placeholder="Enter your address" required>
+        </div>
+        <div class="form-group">
+            <label for="phonenum"><b>Phone Number:</b></label>
+            <input type="text" class="form-control" id="phonenum" name="phonenum" placeholder="Enter your phone number" required>
+        </div>
+        <div class="form-group">
+            <label for="email"><b>Email:</b></label>
+            <input type="text" class="form-control" id="email" name="email" placeholder="Enter your email" required>
+        </div>
+        <div class="form-group">
+            <label for="landmark"><b>Landmark:</b></label>
+            <textarea class="form-control" id="landmark" name="landmark" placeholder="e.g:- in front of Train Station"></textarea>
+        </div>
 
-            <h2 class="text-center">Payment Options</h2>
-            <form>
-                <div class="form-group">
-                    <label for="paymentMethod">Select Payment Method:</label>
-                    <select class="form-control" id="paymentMethod" onchange="handlePaymentChange()">
-                        <option value="cod">Cash on Delivery</option>
-                        <option value="online">Online Payment</option>
-                    </select>
-                </div>
-            </form>
-    </div>
+        <h2 class="text-center"><b>Payment Options</b></h2>
+        <div class="form-group">
+            <label for="paymentMethod"><b>Select Payment Method:</b></label>
+            <select class="form-control" id="paymentMethod" name="paymentMethod" onchange="handlePaymentChange()">
+                <option value="cod">Cash on Delivery</option>
+                <option value="online">Online Payment</option>
+            </select>
+        </div>
+        <center><button type="submit" class="btn btn-primary">Place Order</button></center>
+    </form> 
+</div>
+
+    <?php
+    // Close connection
+    $stmt->close();
+    $conn->close();
+    ?>
 
     <br><br>
 
     <!-- Online Payment Modal -->
-    <div class="modal fade" id="onlinePaymentModal" tabindex="-1" aria-labelledby="onlinePaymentModalLabel"
-        aria-hidden="true">
+    <div class="modal fade" id="onlinePaymentModal" tabindex="-1" aria-labelledby="onlinePaymentModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="container" id="cardPayment">
+                <div class="modal-header">
                     <h5 class="modal-title" id="onlinePaymentModalLabel">Online Payment Form</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
                     <form>
                         <div class="form-group">
                             <label for="cardNumber">Card Number</label>
@@ -193,7 +344,7 @@
                             <label for="TotalAmount">Total Amount</label>
                             <input type="text" class="form-control" id="TotalAmount" placeholder="RS.">
                         </div>
-                        <button type="submit" class="btn btn-primary">Pay Now</button>
+                        <center><button type="submit" class="btn btn-primary">Place Order</button></center>
                     </form>
                 </div>
             </div>
@@ -204,7 +355,9 @@
         function handlePaymentChange() {
             var paymentMethod = document.getElementById('paymentMethod').value;
             if (paymentMethod === 'online') {
-                $('#onlinePaymentModal').modal('show');
+                // Show the online payment modal
+                var onlinePaymentModal = new bootstrap.Modal(document.getElementById('onlinePaymentModal'));
+                onlinePaymentModal.show();
             }
         }
     </script>

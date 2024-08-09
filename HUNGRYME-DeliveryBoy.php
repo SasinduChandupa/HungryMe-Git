@@ -1,3 +1,109 @@
+<?php
+// Database configuration
+$servername = "localhost";
+$username = "root";
+$password = "";
+$dbname = "hungrymedb";
+
+// Create a connection to the database
+$conn = new mysqli($servername, $username, $password, $dbname);
+
+// Check the connection
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+// Fetch data from the database
+$sql = "SELECT Name, Address, PhoneNo, Landmarks, OrderID AS OID, PaymentMethod AS PaymentMethod, Email, OrderDate , shopname, menuitem
+        FROM `order`";
+        
+$result = $conn->query($sql);
+?>
+
+<?php
+// Database configuration
+$servername = "localhost";
+$username = "root";
+$password = "";
+$dbname = "hungrymedb";
+
+// Create connection
+$conn = new mysqli($servername, $username, $password, $dbname);
+
+// Check connection
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+// Check if the form is submitted
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Retrieve the order_id from the form
+    $order_id = $_POST['order_id'];
+
+    // Prepare the SQL query to update the order status using a prepared statement
+    $stmt = $conn->prepare("UPDATE `order` SET OrderStatus = 'delivered' WHERE OrderID = ?");
+    $stmt->bind_param("i", $order_id); // Assuming OrderID is an integer
+
+    // Execute the query
+    if ($stmt->execute()) {
+        // Redirect back to the original page or display a success message
+        header("Location: HUNGRYME-DeliveryBoy.php");
+        exit();
+    } else {
+        // Handle errors if the query fails
+        echo "Error updating record: " . $stmt->error;
+    }
+
+    // Close the prepared statement
+    $stmt->close();
+}
+
+// Close the database connection
+$conn->close();
+?>
+
+
+<?php
+$servername = "localhost";
+$username = "root";
+$password = "";
+$dbname = "hungrymedb";
+
+$conn = new mysqli($servername, $username, $password, $dbname);
+
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $orderID = $_POST['order_id'];
+    $deliveryDate = date('Y-m-d H:i:s');
+
+    $sql = "INSERT INTO delivery (DeliveryDate, Status, DeliveryAddress, OrderID) 
+            VALUES (?, 'Delivered', 'Address', 'OID')";
+
+    $stmt = $conn->prepare($sql);
+
+    if ($stmt === false) {
+        die("Error preparing statement: " . $conn->error);
+    }
+
+    $stmt->bind_param('si', $deliveryDate, $orderID);
+
+    if ($stmt->execute()) {
+        echo "Order marked as delivered successfully.";
+    } else {
+        echo "Error: " . $stmt->error;
+    }
+
+    $stmt->close();
+}
+
+$conn->close();
+?>
+
+
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -7,9 +113,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/x-icon" href="title.jpg">
     <link rel="C:\wamp64\www\Final\Images">
-    <title>HUNGRYME_Admin</title>
+    <title>HUNGRYME_Delivery_Boy</title>
     <link rel="stylesheet" type="text/css" href="Bootstrap/css/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="HStylee.css">
+    <link rel="stylesheet" type="text/css" href="H_Style.css">
     <script type="text/javascript" src="Bootstrap/js/bootstrap.min.js"></script>
     <link rel="stylesheet" type="text/css"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -79,35 +185,66 @@
 
     <br><br>
 
-    <form id="deliveryDetailsForm" class="deliveryDetailsForm">
-        <div class="delivery-details">
-            <div class="form-group">
-                <label for="name"><strong>Name:</strong></label>
-                <input type="r" class="form-control" id="name" name="name" readonly>
-            </div>
-            <div class="form-group">
-                <label for="address"><strong>Address:</strong></label>
-                <input type="text" class="form-control" id="address" name="address" readonly>
-            </div>
-            <div class="form-group">
-                <label for="items"><strong>Items:</strong></label>
-                <input type="text" class="form-control" id="items" name="items" readonly>
-            </div>
-            <div class="form-group">
-                <label for="quantity"><strong>Quantity:</strong></label>
-                <input type="text" class="form-control" id="quantity" name="quantity" readonly>
-            </div>
-            <div class="form-group">
-                <label for="location"><strong>Location:</strong></label>
-                <iframe src="https://www.google.com/maps/embed?pb=!1m28!1m12!1m3!1d7935.410344540302!2d80.213322244567!3d6.035137195203618!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!4m13!3e9!4m5!1s0x3ae173bd862b2019%3A0x29947d173eea0919!2sPizza%20Hut%20-%20Galle%2C%20Colombo%20-%20Galle%20Main%20Road%2C%20Galle!3m2!1d6.0356742!2d80.2099674!4m5!1s0x3ae173b12f4deb15%3A0x31ccbc33eb91d2ac!2zTklCTSBHYWxsZSBDZW50cmUsIOC2uOC3lOC3hOC3lOC2r-C3lCDgt4Dgt5Pgtq_gt5LgtrosIEdhbGxl!3m2!1d6.0371624!2d80.2240274!5e0!3m2!1sen!2slk!4v1720377139615!5m2!1sen!2slk" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-            </div>
-
-            <div class="form-group">
-                <input type="submit" class="btn btn-success btn-delivered" value="Delivered">
-                <input type="button" class="btn btn-danger btn-nondelivered" value="Not Delivered">
-            </div>
-        </div>
-    </form>
+    <div class="container">
+        <h2 class="text-center">Delivery Details</h2>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>CusName</th>
+                    <th>Address</th>
+                    <th>PhoneNumber</th>
+                    <th>Location</th>
+                    <th>Land Mark</th>
+                    <th>OID</th>
+                    <th>Shop Names</th>
+                    <th>Item Names</th>
+                    <th>Click the Order</th>
+                    <th>Order Status </th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if ($result->num_rows > 0): ?>
+                    <?php while($row = $result->fetch_assoc()): ?>
+                        <tr>
+                            <td><?php echo htmlspecialchars($row['Name']); ?></td>
+                            <td><?php echo htmlspecialchars($row['Address']); ?></td>
+                            <td><?php echo htmlspecialchars($row['PhoneNo']); ?></td>
+                            <td><?php echo htmlspecialchars($row['OrderDate']); ?></td>
+                            <td><?php echo htmlspecialchars($row['Landmarks']); ?></td>
+                            <td><?php echo htmlspecialchars($row['OID']); ?></td>
+                            <td><?php echo htmlspecialchars($row['shopname']);?></td>
+                            <td><?php echo htmlspecialchars($row['menuitem']); ?></td>
+                            <td>
+                                <!-- Button example: View Details -->
+                                <form method="POST" action="HUNGRYME-editDelivery.php">
+                                    <input type="hidden" name="order_id" value="<?php echo htmlspecialchars($row['OID']); ?>">
+                                    <button type="submit" style="background-color: yellow; color: black;" class="btn btn-warning" onmouseover="changeColor(this)">Click Order</button>
+                                </form>
+                            </td>
+                            <script>
+                                function changeColor(button) {
+                                    button.style.backgroundColor = 'red';
+                                    button.style.color = 'white';
+                                    button.removeEventListener('mouseover', () => changeColor(button));
+                                }
+                            </script>
+                            <td>
+                                <!-- Button example: View Details -->
+                                <form method="POST" action="HUNGRYME-DeliveryBoy.php">
+                                    <input type="hidden" name="order_id" value="<?php echo htmlspecialchars($row['OID']); ?>">
+                                    <button type="submit" class="btn btn-primary">Complete Order</button>
+                                </form>
+                            </td>
+                        </tr>
+                    <?php endwhile; ?>
+                <?php else: ?>
+                    <tr>
+                        <td colspan="8">No records found</td>
+                    </tr>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
 
     <br><br>
 

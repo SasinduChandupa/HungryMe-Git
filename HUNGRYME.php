@@ -83,20 +83,36 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     // Add to cart
-    if (isset($_POST['add_to_cart'])) {
-        $name = $conn->real_escape_string($_POST['name']);
-        $price = $conn->real_escape_string($_POST['price']);
-        $image = $conn->real_escape_string($_POST['image']);
-        $username = $_SESSION['username']; // Get the logged-in username from the session
+// Add to cart
+if (isset($_POST['add_to_cart'])) {
+    $name = $conn->real_escape_string($_POST['name']);
+    $price = $conn->real_escape_string($_POST['price']);
+    $image = $conn->real_escape_string($_POST['image']);
+    $shop = $conn->real_escape_string($_POST['shop']);
+    $username = $_SESSION['username']; // Get the logged-in username from the session
 
-        $sql = "INSERT INTO cart (username, item_name, item_price, item_image) VALUES ('$username', '$name', '$price', '$image')";
+    // Fetch the ID based on the username
+    $sql = "SELECT ID FROM tbllogin WHERE username='$username'";
+    $result = $conn->query($sql);
+    
+    if ($result->num_rows > 0) {
+        $row = $result->fetch_assoc();
+        $cusID = $row['ID'];
+        
+        // Insert item into the cart with the CusID and username
+        $sql = "INSERT INTO cart (CusID, username, item_name, item_price, item_image, shop_name) VALUES ('$cusID', '$username', '$name', '$price', '$image', '$shop')";
         if ($conn->query($sql) === TRUE) {
             echo "Item added to cart successfully";
         } else {
             echo "Error: " . $sql . "<br>" . $conn->error;
         }
-        exit();
+    } else {
+        echo "Error: No user found with that username";
     }
+
+    exit();
+}
+
 
    
     // Search food items
@@ -143,7 +159,7 @@ $conn->close();
     <link rel="icon" type="image/x-icon" href="title.jpg">
     <title>HUNGRYME</title>
     <link rel="stylesheet" type="text/css" href="Bootstrap/css/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="HStylee.css">
+    <link rel="stylesheet" type="text/css" href="H_Style.css">
     <script type="text/javascript" src="Bootstrap/js/bootstrap.min.js"></script>
     <link rel="stylesheet" type="text/css"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -201,8 +217,7 @@ $conn->close();
     });
     });
     </script>
-
-    <nav class="navbar navbar-expand-sm bg-warning">
+   <nav class="navbar navbar-expand-sm bg-warning">
         <div class="container-fluid">
             <div class="logo textual pull-left">
                 <img src="HUNGRYME(txt).png" height="40px" alt="Logo">
@@ -224,6 +239,9 @@ $conn->close();
             </ul>
         </div>
     </nav>
+
+
+    
 
     <!-- Login / SignUp Modal -->
     <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
@@ -301,8 +319,7 @@ $conn->close();
             element.classList.toggle("dark-mode");
         }
     </script>
-
-    <div class="Topic" id="home">
+     <div class="Topic" id="home">
         <div class="row">
             <h1>H U N G R Y M E</h1>
         </div>
@@ -360,6 +377,8 @@ $conn->close();
         </div>
         
     </div>
+    
+   
     <div class="search-bar" style="margin: 20px;" class="d-flex">
         <form id="searchForm">
             <select id="food" name="food" required>
@@ -466,46 +485,47 @@ $conn->close();
                 url: "HUNGRYME.php",
                 data: { search: true, food: food, district: district },
                 success: function (response) {
-        var foodItems = JSON.parse(response);
-        var tableBody = $("#foodTableBody");
+    var foodItems = JSON.parse(response);
+    var tableBody = $("#foodTableBody");
 
-        tableBody.empty(); // Clear the existing table rows
+    tableBody.empty(); // Clear the existing table rows
 
-        if (foodItems.length > 0) {
-            foodItems.forEach(function (item) {
-                console.log("Image Path:", item.ImagePath); // Log the image path
+    if (foodItems.length > 0) {
+        foodItems.forEach(function (item) {
+            console.log("Image Path:", item.ImagePath); // Log the image path
 
-                var row = `<tr>
-                    <td>${item.MenuName}</td>
-                    <td>${item.ShopName}</td>
-                    <td>${item.Price}</td>
-                    <td>${item.Description}</td>
-                    <td><img src="${item.ImagePath}" alt="Image" style="width: 100px; height: auto;"></td>
-                    <td><button class="btn btn-warning add-to-cart" data-name="${item.MenuName}" data-price="${item.Price}" data-image="${item.ImagePath}">Add to Cart</button></td>
-                </tr>`;
-                tableBody.append(row);
+            var row = `<tr>
+                <td>${item.MenuName}</td>
+                <td>${item.ShopName}</td>
+                <td>${item.Price}</td>
+                <td>${item.Description}</td>
+                <td><img src="${item.ImagePath}" alt="Image" style="width: 100px; height: auto;"></td>
+                <td><button class="btn btn-warning add-to-cart" data-name="${item.MenuName}" data-price="${item.Price}" data-image="${item.ImagePath}" data-shop="${item.ShopName}">Add to Cart</button></td>
+            </tr>`;
+            tableBody.append(row);
+        });
+
+        // Add to cart button click event
+        $(".add-to-cart").click(function () {
+            var name = $(this).data("name");
+            var price = $(this).data("price");
+            var image = $(this).data("image");
+            var shop = $(this).data("shop");
+
+            $.ajax({
+                type: "POST",
+                url: "HUNGRYME.php",
+                data: { add_to_cart: true, name: name, price: price, image: image, shop: shop },
+                success: function (response) {
+                    alert("Item added to cart successfully");
+                }
             });
-
-            // Add to cart button click event
-            $(".add-to-cart").click(function () {
-                var name = $(this).data("name");
-                var price = $(this).data("price");
-                var image = $(this).data("image");
-
-                $.ajax({
-                    type: "POST",
-                    url: "HUNGRYME.php",
-                    data: { add_to_cart: true, name: name, price: price, image: image },
-                    success: function (response) {
-                        alert("Item added to cart successfully");
-                    }
-                });
-            });
-        } else {
-            tableBody.append("<tr><td colspan='6'>No items found</td></tr>");
-        }
+        });
+    } else {
+        tableBody.append("<tr><td colspan='6'>No items found</td></tr>");
     }
-            });
+}
+       });
         });
     });
 
@@ -514,7 +534,7 @@ $conn->close();
         }
 
     </script>
-    <br>
+     <br>
         <center>
             <div class="container" id="c">
                 <div class="row">
@@ -620,6 +640,8 @@ $conn->close();
                         class="text-reset fw-bold" href="#">Hungryme.com</a>
                 </div>
         </footer>
+        
+        
 </body>
 
 </html>
