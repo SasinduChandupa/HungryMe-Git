@@ -2,6 +2,41 @@
 // Start session to access session variables
 session_start();
 
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['fetchOrderDetails'])) {
+    // Database connection
+    $servername = "localhost";
+    $username = "root";
+    $password = "";
+    $dbname = "hungrymedb";
+
+    // Create connection
+    $conn = new mysqli($servername, $username, $password, "", $dbname);
+
+    // Check connection
+    if ($conn->connect_error) {
+        die("Connection failed: " . $conn->connect_error);
+    }
+
+    // Fetch data from the database
+    $sql = "SELECT Name, Address, PhoneNo, Landmarks, OrderID AS OID, PaymentMethod AS PaymentMethod, Email, OrderDate, shopname, menuitem
+            FROM order";
+    $result = $conn->query($sql);
+
+    if ($result->num_rows > 0) {
+        // Output data of each row
+        while($row = $result->fetch_assoc()) {
+            echo "Name: " . $row["Name"]. " - Address: " . $row["Address"]. " - Phone No: " . $row["PhoneNo"]. 
+                 " - Landmarks: " . $row["Landmarks"]. " - Order ID: " . $row["OID"]. " - Payment Method: " . $row["PaymentMethod"]. 
+                 " - Email: " . $row["Email"]. " - Order Date: " . $row["OrderDate"]. 
+                 " - Shop Name: " . $row["shopname"]. " - Menu Item: " . $row["menuitem"]. "<br>";
+        }
+    } else {
+        echo "No records found.";
+    }
+
+    $conn->close();
+}
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['addMenuItem'])) {
     // Database connection
     $servername = "localhost";
@@ -126,43 +161,35 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['removeMenuItem'])) {
     $stmt->close();
     $conn->close();
 }
-
-// Fetching menu items for the logged-in shop owner
-function fetchMenuItems($shopID) {
-    $servername = "localhost";
-    $username = "root";
-    $password = "";
-    $dbname = "hungrymedb";
-
-    // Create connection
-    $conn = new mysqli($servername, $username, $password, $dbname);
-
-    // Check connection
-    if ($conn->connect_error) {
-        die("Connection failed: " . $conn->connect_error);
-    }
-
-    $sql = "SELECT MenuItemID, Description, Price, MenuName FROM menuitem WHERE ShopID = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("s", $shopID);
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    $menuItems = [];
-    while ($row = $result->fetch_assoc()) {
-        $menuItems[] = $row;
-    }
-
-    $stmt->close();
-    $conn->close();
-
-    return $menuItems;
-}
-
-$shopID = isset($_COOKIE['password']) ? $_COOKIE['password'] : ''; // Assuming password is used as ShopID
-$menuItems = fetchMenuItems($shopID);
 ?>
 
+<?php
+// Database connection
+$servername = "localhost";
+$username = "root";
+$password = "";
+$dbname = "hungrymedb";
+$conn = new mysqli($servername, $username, $password, $dbname);
+
+// Check connection
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+// Assuming the filter value is stored in a cookie
+$filterValue = isset($_COOKIE['username']) ? $_COOKIE['username'] : null;
+
+// Only proceed if the filter value is available
+if ($filterValue) {
+    // Fetch the order details where the filter matches the cookie value
+    $stmt = $conn->prepare("SELECT OrderID AS OID, menuitem, DeliveryBoyID FROM `order` WHERE shopname = ?");
+    $stmt->bind_param("s", $filterValue);
+    $stmt->execute();
+    $result = $stmt->get_result();
+} else {
+    echo "No relevant cookie value found.";
+}
+?>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -299,8 +326,82 @@ $menuItems = fetchMenuItems($shopID);
         </script>
     </div>
 
+    <!-- Display the value of the username cookie in the form field -->
+    <div class="form-group">
+        <label for="tot"><b>Hello</b></label>
+        <input type="text" class="form-control" id="tot" name="totalAmount" readonly value="<?php echo htmlspecialchars($_COOKIE['username']); ?>">
+    </div>
+
+ <!-- Fetch items as a shop owner -->
+ <div class="container">
+        <h2 class="text-center">Order Details</h2>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Menu Items</th>
+                    <th>DeliveryBoy ID</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (isset($result) && $result->num_rows > 0): ?>
+                <?php while($row = $result->fetch_assoc()): ?>
+                    <tr>
+                        <td><?php echo htmlspecialchars($row['OID']); ?></td>
+                        <td><?php echo htmlspecialchars($row['menuitem']); ?></td>
+                        <td><?php echo htmlspecialchars($row['DeliveryBoyID']); ?></td>
+                    </tr>
+                <?php endwhile; ?>
+                <?php else: ?>
+                    <tr>
+                        <td colspan="3" class="text-center">No records found</td>
+                    </tr>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+
+    
+
+    <!-- Close the statement and connection -->
+    <?php
+    if (isset($stmt)) {
+        $stmt->close();
+    }
+    $conn->close();
+    ?>
+    <?php
+// Database connection
+$servername = "localhost";
+$username = "root";
+$password = "";
+$dbname = "hungrymedb";
+$conn = new mysqli($servername, $username, $password, $dbname);
+
+// Check connection
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+// Fetch menu items from the database
+$sql = "SELECT MenuItemID, MenuName, Description, Price FROM menuitem";
+$result = $conn->query($sql);
+
+$menuItems = []; // Initialize the array
+if ($result->num_rows > 0) {
+    // Fetch all menu items
+    while($row = $result->fetch_assoc()) {
+        $menuItems[] = $row;
+    }
+}
+
+$conn->close();
+?>
+
+
+
     <!-- Display the menu list -->
-    <div class="container" id="menuList">
+<div class="container" id="menuList">
     <h3>Menu List</h3>
     <table class="table table-striped">
         <thead>
@@ -313,26 +414,32 @@ $menuItems = fetchMenuItems($shopID);
             </tr>
         </thead>
         <tbody>
-            <?php foreach ($menuItems as $item) : ?>
-                <tr>
-                    <td><?php echo htmlspecialchars($item['MenuItemID']); ?></td>
-                    <td><?php echo htmlspecialchars($item['MenuName']); ?></td>
-                    <td><?php echo htmlspecialchars($item['Description']); ?></td>
-                    <td><?php echo htmlspecialchars($item['Price']); ?></td>
-                    <td>
-                        <!-- Removed the edit button -->
-                        <form method="POST" action="#" style="display:inline;">
-                            <input type="hidden" name="menuItemID" value="<?php echo $item['MenuItemID']; ?>">
-                            <input type="hidden" name="removeMenuItem" value="1">
-                            <button type="submit" class="btn btn-danger btn-sm">Remove</button>
-                        </form>
+            <?php if (!empty($menuItems)) : ?>
+                <?php foreach ($menuItems as $item) : ?>
+                    <tr>
+                        <td><?php echo htmlspecialchars($item['MenuItemID']); ?></td>
+                        <td><?php echo htmlspecialchars($item['MenuName']); ?></td>
+                        <td><?php echo htmlspecialchars($item['Description']); ?></td>
+                        <td><?php echo htmlspecialchars($item['Price']); ?></td>
                         <td>
-                    </td>
+                            <!-- Removed the edit button -->
+                            <form method="POST" action="#" style="display:inline;">
+                                <input type="hidden" name="menuItemID" value="<?php echo htmlspecialchars($item['MenuItemID']); ?>">
+                                <input type="hidden" name="removeMenuItem" value="1">
+                                <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                            </form>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <tr>
+                    <td colspan="5" class="text-center">No menu items found</td>
                 </tr>
-            <?php endforeach; ?>
+            <?php endif; ?>
         </tbody>
     </table>
-    </div>
+</div>
+
 
 
     <br><br>
@@ -437,6 +544,8 @@ $menuItems = fetchMenuItems($shopID);
             </div>
         </div>
     </div>
+
+
 
     <script>
         // Get the Add Item modal element
