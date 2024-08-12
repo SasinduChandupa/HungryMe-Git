@@ -29,10 +29,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $shopID = 'SHP' . str_pad($nextId, 3, '0', STR_PAD_LEFT);
 
     // Debugging output
-    echo "Generated ShopID: " . $shopID . "<br>";
+    // echo "Generated ShopID: " . $shopID . "<br>";
 
     // Insert into Shop table
-    $sql = "INSERT INTO shop (ShopID, ShopName, ShopEmail) VALUES ('$shopID', '$shopName', '$shopEmail')";
+    $sql = "INSERT INTO shop (ShopID, ShopName, ShopEmail,password,role) VALUES ('$shopID', '$shopName', '$shopEmail','$shopID','shop_owner')";
     if ($conn->query($sql) === TRUE) {
         // Split the comma-separated phone numbers and trim whitespace
         $phoneNumbers = array_map('trim', explode(',', $shopPhone));
@@ -47,30 +47,30 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         
 
-            // Insert login information for the shop owner
-            $shopOwnerUsername = $conn->real_escape_string($shopName); // Use ShopName as username
-            // $shopOwnerPassword = password_hash($shopID, PASSWORD_DEFAULT); // Use ShopID as password, hashed
-            $shopOwnerRole = 'shop_owner';
-            $sqlLogin = "INSERT INTO tbllogin (username, password, role) VALUES ('$shopOwnerUsername', '$shopID', '$shopOwnerRole')";
+            // // Insert login information for the shop owner
+            // $shopOwnerUsername = $conn->real_escape_string($shopName); // Use ShopName as username
+            // // $shopOwnerPassword = password_hash($shopID, PASSWORD_DEFAULT); // Use ShopID as password, hashed
+            // $shopOwnerRole = 'shop_owner';
+            // $sqlLogin = "INSERT INTO tbllogin (username, password, role) VALUES ('$shopOwnerUsername', '$shopID', '$shopOwnerRole')";
 
-            // Debugging output
-            echo "Username: " . $shopOwnerUsername . "<br>";
-            echo "Password (hashed): " . $shopOwnerPassword . "<br>";
-            echo "Role: " . $shopOwnerRole . "<br>";
-            echo "SQL: " . $sqlLogin . "<br>";
+            // // Debugging output
+            // echo "Username: " . $shopOwnerUsername . "<br>";
+            // echo "Password (hashed): " . $shopOwnerPassword . "<br>";
+            // echo "Role: " . $shopOwnerRole . "<br>";
+            // echo "SQL: " . $sqlLogin . "<br>";
 
-            if ($conn->query($sqlLogin) !== TRUE) {
-                echo "Error inserting login information: " . $conn->error;
-            } else {
-                echo "New shop added successfully.";
-                // Redirect to admin page after successful insertion
-                if (headers_sent()) {
-                    echo "<script>window.location.href='HUNGRYME-Admin.php';</script>";
-                } else {
-                    header("Location: HUNGRYME-Admin.php");
-                }
-                exit(); // Ensure no further code execution after redirection
-            }
+            // if ($conn->query($sqlLogin) !== TRUE) {
+            //     echo "Error inserting login information: " . $conn->error;
+            // } else {
+            //     echo "New shop added successfully.";
+            //     // Redirect to admin page after successful insertion
+            //     if (headers_sent()) {
+            //         echo "<script>window.location.href='HUNGRYME-Admin.php';</script>";
+            //     } else {
+            //         header("Location: HUNGRYME-Admin.php");
+            //     }
+            //     exit(); // Ensure no further code execution after redirection
+            // }
         }
     } else {
         echo "Error: " . $sql . "<br>" . $conn->error;
@@ -209,79 +209,6 @@ $conn->close();
                 typeWriter();
             };
         </script>
-    </div>
-
-    <br><br>
-
-    <!-- Admin Handle Delivery and Payment -->
-    <div class="container" id="adminActions">
-        <h2>Admin Actions</h2><br>
-        <button id="showHandleDeliveryModal">Handle Delivery</button>
-        <button id="showHandlePaymentModal">Handle Payment</button>
-    </div>
-
-    <!-- Handle Delivery Modal -->
-    <div class="modal fade" id="handleDeliveryModal" tabindex="-1" role="dialog"
-        aria-labelledby="handleDeliveryModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="handleDeliveryModalLabel">Handle Delivery</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <form id="handleDeliveryForm">
-                        <div class="form-group">
-                            <label for="deliveryId" id="ll">Delivery ID</label>
-                            <input type="text" class="form-control" id="deliveryId" placeholder="Enter Delivery ID">
-                        </div>
-                        <div class="form-group">
-                            <label for="deliveryStatus" id="ll">Delivery Status</label>
-                            <select class="form-control" id="deliveryStatus">
-                                <option value="Pending">Pending</option>
-                                <option value="In Progress">In Progress</option>
-                                <option value="Delivered">Delivered</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Update Delivery</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Handle Payment Modal -->
-    <div class="modal fade" id="handlePaymentModal" tabindex="-1" role="dialog"
-        aria-labelledby="handlePaymentModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="handlePaymentModalLabel">Handle Payment</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <form id="handlePaymentForm">
-                        <div class="form-group">
-                            <label for="paymentId" id="ll">Payment ID</label>
-                            <input type="text" class="form-control" id="paymentId" placeholder="Enter Payment ID">
-                        </div>
-                        <div class="form-group">
-                            <label for="paymentStatus" id="ll">Payment Status</label>
-                            <select class="form-control" id="paymentStatus">
-                                <option value="Pending">Pending</option>
-                                <option value="Completed">Completed</option>
-                                <option value="Failed">Failed</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Update Payment</button>
-                    </form>
-                </div>
-            </div>
-        </div>
     </div>
 
     <br><br>

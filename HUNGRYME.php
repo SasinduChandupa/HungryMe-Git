@@ -24,9 +24,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $signup_password = $_POST['signup-password'];
         $signup_role = $conn->real_escape_string($_POST['signup-role']); // Sanitize input
 
-        $password_hash = password_hash($signup_password, PASSWORD_BCRYPT);
+        // Save plain text password (not recommended)
+        $plain_password = $signup_password;
 
-        $sql = "INSERT INTO tbllogin (username, password, role) VALUES ('$signup_name', '$signup_password', '$signup_role')";
+        // Check if the role is 'user'
+        if ($signup_role == 'user') {
+            // Insert into customer table
+            $sql = "INSERT INTO customer (name, password, role) VALUES ('$signup_name', '$plain_password', '$signup_role')";
+        } else {
+            // Handle other roles if needed
+            $sql = "INSERT INTO other_table (name, password, role) VALUES ('$signup_name', '$plain_password', '$signup_role')";
+        }
+
         if ($conn->query($sql) === TRUE) {
             $_SESSION['username'] = $signup_name;
             $_SESSION['role'] = $signup_role;
@@ -43,15 +52,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $login_pass = $_POST['login-pass'];
         $login_role = $conn->real_escape_string($_POST['login-role']);
 
-        // Query to fetch user with matching username and role
-        $sql = "SELECT * FROM tbllogin WHERE username='$login_name' AND role='$login_role'";
+        // Check role and query the appropriate table
+        if ($login_role == 'admin') {
+            // Query from admin table
+            $sql = "SELECT * FROM admin WHERE name='$login_name' AND role='$login_role'";
+        } elseif ($login_role == 'delivery_boy') {
+            // Query from delivery table
+            $sql = "SELECT * FROM delivery WHERE DeliveryBoyName='$login_name' AND role='$login_role'";
+        } elseif ($login_role == 'shop_owner') {
+            // Query from shop table
+            $sql = "SELECT * FROM shop WHERE ShopName='$login_name' AND role='$login_role'";
+        } else {
+            // Query from customer table
+            $sql = "SELECT * FROM customer WHERE name='$login_name' AND role='$login_role'";
+        }
+
         $result = $conn->query($sql);
 
         if ($result->num_rows > 0) {
             $row = $result->fetch_assoc();
 
             // Verify password
-            if ((string)$row['password']==(string)$login_pass) {
+            if ($row['password'] === $login_pass) { // Ensure the correct field name for password
                 // Password is correct, set session variables
                 $_SESSION['username'] = $login_name;
                 $_SESSION['role'] = $row['role'];
@@ -59,28 +81,31 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 setcookie("password", "$login_pass", time()+3600, "/","", 0); 
                 setcookie("username", "$login_name", time()+3600, "/","", 0);
 
-                 // Redirect based on role
-            if ($row['role'] == 'shop_owner') {
-                header("Location: HUNGRYME-ShopOwner.php");
-
-            } else if ($row['role'] == 'delivery_boy') {
-                header("Location: HUNGRYME-DeliveryBoy.php");
-
-            } else if ($row['role'] == 'admin'){
-                header("Location: HUNGRYME-Admin.php");
-
-            }else if ($row['role'] == 'user'){
-                header("Location: HUNGRYME.php");
-
-            exit();
+                // Redirect based on role
+                if ($row['role'] == 'shop_owner') {
+                    header("Location: HUNGRYME-ShopOwner.php");
+                } elseif ($row['role'] == 'delivery_boy') {
+                    header("Location: HUNGRYME-DeliveryBoy.php");
+                } elseif ($row['role'] == 'Admin') {
+                    header("Location: HUNGRYME-Admin.php");
+                } elseif ($row['role'] == 'user') {
+                    header("Location: HUNGRYME.php");
+                }
+                exit(); // Ensure exit() is called to stop further script execution
             } else {
                 echo "Invalid password!";
             }
-            } else {
-                echo "No user found with that username and role!";
-            }
+        } else {
+            echo "No user found with that username and role!";
         }
     }
+}
+
+
+
+
+
+
 
     // Add to cart
 // Add to cart
@@ -89,18 +114,20 @@ if (isset($_POST['add_to_cart'])) {
     $price = $conn->real_escape_string($_POST['price']);
     $image = $conn->real_escape_string($_POST['image']);
     $shop = $conn->real_escape_string($_POST['shop']);
+    $description = $conn->real_escape_string($_POST['description']);
     $username = $_SESSION['username']; // Get the logged-in username from the session
 
-    // Fetch the ID based on the username
-    $sql = "SELECT ID FROM tbllogin WHERE username='$username'";
+    // Fetch the CusID based on the username from the customer table
+    $sql = "SELECT CusID FROM customer WHERE name='$username'";
     $result = $conn->query($sql);
     
     if ($result->num_rows > 0) {
         $row = $result->fetch_assoc();
-        $cusID = $row['ID'];
+        $cusID = $row['CusID'];
         
-        // Insert item into the cart with the CusID and username
-        $sql = "INSERT INTO cart (CusID, username, item_name, item_price, item_image, shop_name) VALUES ('$cusID', '$username', '$name', '$price', '$image', '$shop')";
+        // Insert item into the cart with the CusID, username, and description
+        $sql = "INSERT INTO cart (CusID, username, item_name, item_price, item_image, shop_name, description) 
+                VALUES ('$cusID', '$username', '$name', '$price', '$image', '$shop', '$description')";
         if ($conn->query($sql) === TRUE) {
             echo "Item added to cart successfully";
         } else {
@@ -145,7 +172,7 @@ if (isset($_POST['search'])) {
 
 
 $conn->close();
-}
+
 ?>
 
 <!--html-->
@@ -287,9 +314,8 @@ $conn->close();
                             <label for="signup-role">Role</label>
                             <select id="signup-role" name="signup-role" class="form-control" required>
                                 <option value="" disabled selected>Select your role</option>
-                                <option value="user">user</option>
-                                <option value="delivery_boy">delivery</option>
-                                <option value="admin">Admin</option>
+                                <option value="user">Customer</option>
+                               
                             </select>
                             </div>
                             <div class="form-element">
@@ -474,67 +500,71 @@ $conn->close();
     <script type="text/javascript">
         // AJAX request to fetch food items based on the search
         $(document).ready(function () {
-        $("#searchForm").submit(function (event) {
-            event.preventDefault();
+    $("#searchForm").submit(function (event) {
+        event.preventDefault();
 
-            var food = $("#food").val();
-            var district = $("#district").val();
+        var food = $("#food").val();
+        var district = $("#district").val();
 
-            $.ajax({
-                type: "POST",
-                url: "HUNGRYME.php",
-                data: { search: true, food: food, district: district },
-                success: function (response) {
-    var foodItems = JSON.parse(response);
-    var tableBody = $("#foodTableBody");
+        $.ajax({
+            type: "POST",
+            url: "HUNGRYME.php",
+            data: { search: true, food: food, district: district },
+            success: function (response) {
+                var foodItems = JSON.parse(response);
+                var tableBody = $("#foodTableBody");
 
-    tableBody.empty(); // Clear the existing table rows
+                tableBody.empty(); // Clear the existing table rows
 
-    if (foodItems.length > 0) {
-        foodItems.forEach(function (item) {
-            console.log("Image Path:", item.ImagePath); // Log the image path
+                if (foodItems.length > 0) {
+                    foodItems.forEach(function (item) {
+                        console.log("Image Path:", item.ImagePath); // Log the image path
 
-            var row = `<tr>
-                <td>${item.MenuName}</td>
-                <td>${item.ShopName}</td>
-                <td>${item.Price}</td>
-                <td>${item.Description}</td>
-                <td><img src="${item.ImagePath}" alt="Image" style="width: 100px; height: auto;"></td>
-                <td><button class="btn btn-warning add-to-cart" data-name="${item.MenuName}" data-price="${item.Price}" data-image="${item.ImagePath}" data-shop="${item.ShopName}">Add to Cart</button></td>
-            </tr>`;
-            tableBody.append(row);
-        });
+                        var row = `<tr>
+                            <td>${item.MenuName}</td>
+                            <td>${item.ShopName}</td>
+                            <td>${item.Price}</td>
+                            <td>${item.Description}</td>
+                            <td><img src="${item.ImagePath}" alt="Image" style="width: 100px; height: auto;"></td>
+                            <td><button class="btn btn-warning add-to-cart" data-name="${item.MenuName}" data-price="${item.Price}" data-image="${item.ImagePath}" data-shop="${item.ShopName}" data-description="${item.Description}">Add to Cart</button></td>
+                        </tr>`;
+                        tableBody.append(row);
+                    });
 
-        // Add to cart button click event
-        $(".add-to-cart").click(function () {
-            var name = $(this).data("name");
-            var price = $(this).data("price");
-            var image = $(this).data("image");
-            var shop = $(this).data("shop");
+                    // Add to cart button click event
+                    $(".add-to-cart").click(function () {
+                        var name = $(this).data("name");
+                        var price = $(this).data("price");
+                        var image = $(this).data("image");
+                        var shop = $(this).data("shop");
+                        var description = $(this).data("description");
 
-            $.ajax({
-                type: "POST",
-                url: "HUNGRYME.php",
-                data: { add_to_cart: true, name: name, price: price, image: image, shop: shop },
-                success: function (response) {
-                    alert("Item added to cart successfully");
+                        $.ajax({
+                            type: "POST",
+                            url: "HUNGRYME.php",
+                            data: { add_to_cart: true, name: name, price: price, image: image, shop: shop, description: description },
+                            success: function (response) {
+                                alert("Item added to cart successfully");
+                            }
+                        });
+                    });
+                } else {
+                    tableBody.append("<tr><td colspan='6'>No items found</td></tr>");
                 }
-            });
-        });
-    } else {
-        tableBody.append("<tr><td colspan='6'>No items found</td></tr>");
-    }
-}
-       });
+            }
         });
     });
+});
+
 
         function goToCart() {
             window.location.href = 'HUNGRYME-Cart.php';
         }
 
     </script>
-     <br>
+
+   <!-- methanata ara pictures wala code danna-->
+   <br>
         <center>
             <div class="container" id="c">
                 <div class="row">

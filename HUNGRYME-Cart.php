@@ -7,9 +7,9 @@ session_start();
 
 // Database connection
 $servername = "localhost";
-$username = "root"; // Change this to your database username
-$password = ""; // Change this to your database password
-$dbname = "hungrymedb"; // Change this to your database name
+$username = "root"; 
+$password = ""; 
+$dbname = "hungrymedb";
 
 $conn = new mysqli($servername, $username, $password, $dbname);
 
@@ -18,7 +18,7 @@ if ($conn->connect_error) {
 }
 
 if (!isset($_SESSION['username'])) {
-    header("Location: HUNGRYME-Cart.php"); // Redirect to login page if not logged in
+    header("Location: HUNGRYME-Cart.php"); 
     exit();
 }
 

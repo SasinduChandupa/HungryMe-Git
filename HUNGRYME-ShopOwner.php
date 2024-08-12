@@ -161,6 +161,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['removeMenuItem'])) {
     $stmt->close();
     $conn->close();
 }
+
 ?>
 
 <?php
@@ -183,9 +184,22 @@ $filterValue = isset($_COOKIE['username']) ? $_COOKIE['username'] : null;
 if ($filterValue) {
     // Fetch the order details where the filter matches the cookie value
     $stmt = $conn->prepare("SELECT OrderID AS OID, menuitem, DeliveryBoyID FROM `order` WHERE shopname = ?");
+    
+    if ($stmt === false) {
+        die('Prepare failed: ' . htmlspecialchars($conn->error));
+    }
+
     $stmt->bind_param("s", $filterValue);
-    $stmt->execute();
+    
+    if ($stmt->execute() === false) {
+        die('Execute failed: ' . htmlspecialchars($stmt->error));
+    }
+
     $result = $stmt->get_result();
+    
+    if ($result === false) {
+        die('Get result failed: ' . htmlspecialchars($stmt->error));
+    }
 } else {
     echo "No relevant cookie value found.";
 }
@@ -332,8 +346,8 @@ if ($filterValue) {
         <input type="text" class="form-control" id="tot" name="totalAmount" readonly value="<?php echo htmlspecialchars($_COOKIE['username']); ?>">
     </div>
 
- <!-- Fetch items as a shop owner -->
- <div class="container">
+    <!-- Fetch items as a shop owner -->
+    <div class="container">
         <h2 class="text-center">Order Details</h2>
         <table class="table table-bordered">
             <thead>
@@ -344,14 +358,14 @@ if ($filterValue) {
                 </tr>
             </thead>
             <tbody>
-                <?php if (isset($result) && $result->num_rows > 0): ?>
-                <?php while($row = $result->fetch_assoc()): ?>
-                    <tr>
-                        <td><?php echo htmlspecialchars($row['OID']); ?></td>
-                        <td><?php echo htmlspecialchars($row['menuitem']); ?></td>
-                        <td><?php echo htmlspecialchars($row['DeliveryBoyID']); ?></td>
-                    </tr>
-                <?php endwhile; ?>
+                <?php if ($result && $result->num_rows > 0): ?>
+                    <?php while($row = $result->fetch_assoc()): ?>
+                        <tr>
+                            <td><?php echo htmlspecialchars($row['OID']); ?></td>
+                            <td><?php echo htmlspecialchars($row['menuitem']); ?></td>
+                            <td><?php echo htmlspecialchars($row['DeliveryBoyID']); ?></td>
+                        </tr>
+                    <?php endwhile; ?>
                 <?php else: ?>
                     <tr>
                         <td colspan="3" class="text-center">No records found</td>
@@ -361,8 +375,6 @@ if ($filterValue) {
         </table>
     </div>
 
-    
-
     <!-- Close the statement and connection -->
     <?php
     if (isset($stmt)) {
@@ -370,6 +382,7 @@ if ($filterValue) {
     }
     $conn->close();
     ?>
+    
     <?php
 // Database connection
 $servername = "localhost";
@@ -383,8 +396,13 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// Fetch menu items from the database
-$sql = "SELECT MenuItemID, MenuName, Description, Price FROM menuitem";
+//session_start();
+
+// Get the logged-in shop name from the session
+$shopName = $_SESSION['username'];
+
+// Fetch menu items from the database for the logged-in shop
+$sql = "SELECT MenuItemID, MenuName, Description, Price FROM menuitem WHERE ShopName = '$shopName'";
 $result = $conn->query($sql);
 
 $menuItems = []; // Initialize the array
@@ -398,9 +416,7 @@ if ($result->num_rows > 0) {
 $conn->close();
 ?>
 
-
-
-    <!-- Display the menu list -->
+<!-- Display the menu list -->
 <div class="container" id="menuList">
     <h3>Menu List</h3>
     <table class="table table-striped">
@@ -422,7 +438,6 @@ $conn->close();
                         <td><?php echo htmlspecialchars($item['Description']); ?></td>
                         <td><?php echo htmlspecialchars($item['Price']); ?></td>
                         <td>
-                            <!-- Removed the edit button -->
                             <form method="POST" action="#" style="display:inline;">
                                 <input type="hidden" name="menuItemID" value="<?php echo htmlspecialchars($item['MenuItemID']); ?>">
                                 <input type="hidden" name="removeMenuItem" value="1">
