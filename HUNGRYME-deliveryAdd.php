@@ -24,7 +24,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         // Generate a unique password in the format DEL001, DEL002, etc.
         $usernamePrefix = "DEL";
-        $latestIdQuery = "SELECT MAX(SUBSTRING(password, 4)) AS latest_id FROM delivery WHERE password LIKE 'DEL%'";
+        $latestIdQuery = "SELECT MAX(SUBSTRING(password, 4)) AS latest_id FROM deliveryboy WHERE password LIKE 'DEL%'";
         $result = $conn->query($latestIdQuery);
         
         if ($result) {
@@ -33,7 +33,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $password = $usernamePrefix . $newId;
 
             // Prepare and execute SQL statement
-            $sql = "INSERT INTO delivery (DeliveryBoyName, password, role) VALUES (?, ?, 'delivery_boy')";
+            $sql = "INSERT INTO deliveryboy (Name, password, role) VALUES (?, ?, 'delivery_boy')";
             if ($stmt = $conn->prepare($sql)) {
                 // Bind parameters (s for string)
                 $stmt->bind_param("ss", $username, $password);

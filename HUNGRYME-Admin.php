@@ -211,6 +211,9 @@ $conn->close();
         </script>
     </div>
 
+    <label for="CustomerName" style="display: inline-block; font-weight: bold; padding-left: 20px;">Hello</label>
+    <input type="text" id="CustomerName" name="CustomerName" readonly value="<?php echo isset($_COOKIE['username']) ? $_COOKIE['username'] : 'ABC'; ?>" style="display: inline-block; border: none; font-weight: bold; background-color: transparent; color: black;">
+
     <br><br>
 
     <center>
@@ -253,46 +256,18 @@ $conn->close();
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="RiceModalLabel">Rice Customize</h5>
+                        <h5 class="modal-title" id="Addon">Add on Price Customization</h5>
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
-                    <form id="RiceForm" method="post" action="customize.php">
+                    <form id="addonForm" method="post" action="customize.php">
                         <input type="hidden" name="btnID" value="Rice">
                         <div class="modal-body">
-                            <label for="riceVegetable">Vegetable</label>
-                            <input type="number" step="0.01" class="form-control" id="riceVegetable" name="vegetable">
-
-                            <label for="riceChicken">Chicken</label>
-                            <input type="number" step="0.01" class="form-control" id="riceChicken" name="Chicken">
+                            <label for="Addon">New Add on Price</label>
+                            <input type="number" step="0.01" class="form-control" id="Addon" name="Addon" required>
                             
-                            <label for="riceBeef">Beef</label>
-                            <input type="number" step="0.01" class="form-control" id="riceBeef" name="Beef">
-                            
-                            <label for="riceMutton">Mutton</label>
-                            <input type="number" step="0.01" class="form-control" id="riceMutton" name="Mutton">
-                        
-                            <label for="riceSauce">Sauce</label>
-                            <input type="number" step="0.01" class="form-control" id="riceSauce" name="Sauce">
-                        
-                            <label for="riceEgg">Egg</label>
-                            <input type="number" step="0.01" class="form-control" id="riceEgg" name="Egg"> 
-                            
-                            <hr>
-
-                            <h5 class="modal-title" id="PizzaModalLabel">Pizza Customize</h5>
-
-                            <label for="SaucePizza">Pizza Sauce</label>
-                            <input type="text" class="form-control" id="SaucePizza" name="SaucePizza">
-
-                            <label for="pizzaCheese">Cheese</label>
-                            <input type="text" class="form-control" id="pizzaCheese" name="Cheese">
-
-                            <label for="pizzameet">Meat</label>
-                            <input type="text" class="form-control" id="pizzameet" name="Meat">
-
-
+                            <input type="text" id="CustomerName" name="CustomerName" readonly value="<?php echo isset($_COOKIE['username']) ? $_COOKIE['username'] : 'ABC'; ?>" style="display: inline-block; border: none; font-weight: bold; background-color: transparent; color: black;">
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-primary" style="width: 100%;" name="update" value="Rice" onclick="submitForm()">Update</button>
@@ -301,7 +276,19 @@ $conn->close();
 
                     <script>
                     function submitForm() {
-                        document.getElementById('RiceForm').submit();
+                        // Get the username from the read-only input field
+                        var adminName = document.getElementById('CustomerName').value;
+
+                        // Set the admin name as a hidden field value
+                        var form = document.getElementById('addonForm');
+                        var hiddenInput = document.createElement('input');
+                        hiddenInput.type = 'hidden';
+                        hiddenInput.name = 'adminName';
+                        hiddenInput.value = adminName;
+                        form.appendChild(hiddenInput);
+
+                        // Submit the form
+                        form.submit();
                     }
                     </script>
                 </div>
@@ -350,7 +337,7 @@ $conn->close();
                 </div>
             </div>
             <div class="text-center p-4" style="background-color: rgba(0, 0, 0, 0.05);">© 2024 Copyright:<a
-                    class="text-reset fw-bold" href="#">Hungryme.com</a>
+                    class="text-reset fw-bold" href="http://localhost/Final/HungryMe/HUNGRYME.php">Hungryme.com</a>
             </div>
     </footer>
 </body>

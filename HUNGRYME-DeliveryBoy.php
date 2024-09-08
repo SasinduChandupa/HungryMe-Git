@@ -5,61 +5,46 @@ $username = "root";
 $password = "";
 $dbname = "hungrymedb";
 
-// Create a connection to the database
 $conn = new mysqli($servername, $username, $password, $dbname);
-
-// Check the connection
 
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// Fetch data from the database
-$sql = "SELECT Name, Address, PhoneNo, Landmarks, OrderID AS OID, PaymentMethod AS PaymentMethod, Email, OrderDate , shopname, menuitem
+$sql = "SELECT Name, Address, PhoneNo, Landmarks, OrderID AS OID, PaymentMethod AS PaymentMethod, Email, OrderDate
         FROM `order`";
         
 $result = $conn->query($sql);
 ?>
 
 <?php
-// Database configuration
 $servername = "localhost";
 $username = "root";
 $password = "";
 $dbname = "hungrymedb";
 
-// Create connection
 $conn = new mysqli($servername, $username, $password, $dbname);
 
-// Check connection
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// Check if the form is submitted
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Retrieve the order_id from the form
     $order_id = $_POST['order_id'];
 
-    // Prepare the SQL query to update the order status using a prepared statement
     $stmt = $conn->prepare("UPDATE `order` SET OrderStatus = 'delivered' WHERE OrderID = ?");
-    $stmt->bind_param("i", $order_id); // Assuming OrderID is an integer
+    $stmt->bind_param("i", $order_id); 
 
-    // Execute the query
     if ($stmt->execute()) {
-        // Redirect back to the original page or display a success message
         header("Location: HUNGRYME-DeliveryBoy.php");
         exit();
     } else {
-        // Handle errors if the query fails
         echo "Error updating record: " . $stmt->error;
     }
 
-    // Close the prepared statement
     $stmt->close();
 }
 
-// Close the database connection
 $conn->close();
 ?>
 
@@ -80,7 +65,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $orderID = $_POST['order_id'];
     $deliveryDate = date('Y-m-d H:i:s');
 
-    $sql = "INSERT INTO delivery (DeliveryDate, Status, DeliveryAddress, OrderID) 
+    $sql = "INSERT INTO deliveryboy (DeliveryDate, Status, DeliveryAddress, OrderID) 
             VALUES (?, 'Delivered', 'Address', 'OID')";
 
     $stmt = $conn->prepare($sql);
@@ -103,6 +88,106 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 $conn->close();
 ?>
 
+<?php
+// Database connection
+$servername = "localhost";
+$username = "root";
+$password = "";
+$dbname = "hungrymedb";
+
+$conn = new mysqli($servername, $username, $password, $dbname);
+
+// Check connection
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+// Query to get the order details with menu items grouped by OrderID
+$sql = "SELECT o.OrderID, o.OrderDate, o.Landmarks, o.Address, o.PhoneNo, o.Name, 
+        GROUP_CONCAT(mi.MenuName SEPARATOR ', ') as MenuItems, s.ShopName
+        FROM `order` o 
+        JOIN orderitem oi ON o.OrderID = oi.OrderID
+        JOIN menuitem mi ON oi.MenuItemID = mi.MenuItemID
+        JOIN shop s ON mi.ShopID = s.ShopID
+        GROUP BY o.OrderID";
+
+$result = $conn->query($sql);
+
+// Array to hold the order details
+$orderDetails = [];
+
+if ($result->num_rows > 0) {
+    while ($row = $result->fetch_assoc()) {
+        // Store the order details with the concatenated menu items
+        $orderDetails[] = [
+            'Name' => $row['Name'],
+            'Address' => $row['Address'],
+            'PhoneNo' => $row['PhoneNo'],
+            'OrderDate' => $row['OrderDate'],
+            'Landmarks' => $row['Landmarks'],
+            'OID' => $row['OrderID'],
+            'shopname' => $row['ShopName'], // Shop Name
+            'menuitem' => $row['MenuItems'], // Menu items concatenated
+        ];
+    }
+}
+
+?>
+
+<?php
+// Database connection
+$servername = "localhost";
+$username = "root";
+$password = "";
+$dbname = "hungrymedb";
+
+$conn = new mysqli($servername, $username, $password, $dbname);
+
+// Check connection
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+$orderAssigned = false;
+// Check if order_id and username are posted
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['order_id']) && isset($_POST['username'])) {
+    $orderID = $_POST['order_id'];
+    $deliveryUsername = $_POST['username'];
+
+    // Step 1: Get DeliveryBoyID from deliveryboy table based on username
+    $sqlDeliveryBoy = "SELECT DeliveryBoyID FROM deliveryboy WHERE name = ?";
+    $stmtDeliveryBoy = $conn->prepare($sqlDeliveryBoy);
+    $stmtDeliveryBoy->bind_param("s", $deliveryUsername);
+    $stmtDeliveryBoy->execute();
+    $resultDeliveryBoy = $stmtDeliveryBoy->get_result();
+
+    if ($resultDeliveryBoy->num_rows > 0) {
+        $rowDeliveryBoy = $resultDeliveryBoy->fetch_assoc();
+        $deliveryBoyID = $rowDeliveryBoy['DeliveryBoyID'];
+
+        // Step 2: Update the order with DeliveryBoyID
+        $sqlUpdateOrder = "UPDATE `order` SET DeliveryBoyID = ? WHERE OrderID = ?";
+        $stmtUpdateOrder = $conn->prepare($sqlUpdateOrder);
+        $stmtUpdateOrder->bind_param("ii", $deliveryBoyID, $orderID);
+
+        if ($stmtUpdateOrder->execute()) {
+            // Redirect back to the same page to reflect the button color change
+            header("Location: HUNGRYME-DeliveryBoy.php"); // Replace with the actual page URL
+            exit();
+        } else {
+            echo "Error updating order: " . $conn->error;
+        }
+    } else {
+        echo "Delivery boy not found.";
+    }
+
+    // Close the statement
+    $stmtDeliveryBoy->close();
+    $stmtUpdateOrder->close();
+}
+
+// Close the connection
+$conn->close();
+?>
 
 
 
@@ -185,6 +270,10 @@ $conn->close();
     </nav>
 
     <br><br>
+    <label for="CustomerName" style="display: inline-block; font-weight: bold; padding-left: 20px;">Hello</label>
+    <input type="text" id="CustomerName" name="CustomerName" readonly value="<?php echo isset($_COOKIE['username']) ? $_COOKIE['username'] : 'ABC'; ?>" style="display: inline-block; border: none; font-weight: bold; background-color: transparent; color: black;">
+
+    <br><br>
 
     <div class="container">
         <h2 class="text-center">Delivery Details</h2>
@@ -204,43 +293,43 @@ $conn->close();
                 </tr>
             </thead>
             <tbody>
-                <?php if ($result->num_rows > 0): ?>
-                    <?php while($row = $result->fetch_assoc()): ?>
+                <?php if (!empty($orderDetails)): ?>
+                    <?php foreach ($orderDetails as $order): ?>
                         <tr>
-                            <td><?php echo htmlspecialchars($row['Name']); ?></td>
-                            <td><?php echo htmlspecialchars($row['Address']); ?></td>
-                            <td><?php echo htmlspecialchars($row['PhoneNo']); ?></td>
-                            <td><?php echo htmlspecialchars($row['OrderDate']); ?></td>
-                            <td><?php echo htmlspecialchars($row['Landmarks']); ?></td>
-                            <td><?php echo htmlspecialchars($row['OID']); ?></td>
-                            <td><?php echo htmlspecialchars($row['shopname']);?></td>
-                            <td><?php echo htmlspecialchars($row['menuitem']); ?></td>
+                            <td><?php echo htmlspecialchars($order['Name']); ?></td>
+                            <td><?php echo htmlspecialchars($order['Address']); ?></td>
+                            <td><?php echo htmlspecialchars($order['PhoneNo']); ?></td>
+                            <td><?php echo htmlspecialchars($order['OrderDate']); ?></td>
+                            <td><?php echo htmlspecialchars($order['Landmarks']); ?></td>
+                            <td><?php echo htmlspecialchars($order['OID']); ?></td>
+                            <td><?php echo htmlspecialchars($order['shopname']); ?></td> <!-- Display Shop Name -->
+                            <td><?php echo htmlspecialchars($order['menuitem']); ?></td> <!-- Display Menu Items concatenated -->
                             <td>
-                                <!-- Button example: View Details -->
-                                <form method="POST" action="HUNGRYME-editDelivery.php">
-                                    <input type="hidden" name="order_id" value="<?php echo htmlspecialchars($row['OID']); ?>">
-                                    <button type="submit" style="background-color: yellow; color: black;" class="btn btn-warning" onmouseover="changeColor(this)">Click Order</button>
+                                <!-- Click Order button -->
+                                <form id="orderForm<?php echo htmlspecialchars($order['OID']); ?>" method="POST" action="HUNGRYME-editDelivery.php">
+                                    <input type="hidden" name="order_id" value="<?php echo htmlspecialchars($order['OID']); ?>">
+                                    <input type="hidden" id="usernameField<?php echo htmlspecialchars($order['OID']); ?>" name="username" value="">
+
+                                    <button type="button" 
+                                            class="btn <?php echo $orderAssigned ? 'btn-danger' : 'btn-warning'; ?>" 
+                                            style="<?php echo $orderAssigned ? 'background-color: red; color: white;' : 'background-color: yellow; color: black;'; ?>"
+                                            onclick="promptUsername('<?php echo htmlspecialchars($order['OID']); ?>')">
+                                        <?php echo $orderAssigned ? 'Order Assigned' : 'Click Order'; ?>
+                                    </button>
                                 </form>
                             </td>
-                            <script>
-                                function changeColor(button) {
-                                    button.style.backgroundColor = 'red';
-                                    button.style.color = 'white';
-                                    button.removeEventListener('mouseover', () => changeColor(button));
-                                }
-                            </script>
                             <td>
-                                <!-- Button example: View Details -->
+                                <!-- Complete Order button -->
                                 <form method="POST" action="HUNGRYME-DeliveryBoy.php">
-                                    <input type="hidden" name="order_id" value="<?php echo htmlspecialchars($row['OID']); ?>">
+                                    <input type="hidden" name="order_id" value="<?php echo htmlspecialchars($order['OID']); ?>">
                                     <button type="submit" class="btn btn-primary">Complete Order</button>
                                 </form>
                             </td>
                         </tr>
-                    <?php endwhile; ?>
+                    <?php endforeach; ?>
                 <?php else: ?>
                     <tr>
-                        <td colspan="8">No records found</td>
+                        <td colspan="10" class="text-center">No records found</td>
                     </tr>
                 <?php endif; ?>
             </tbody>
@@ -248,6 +337,25 @@ $conn->close();
     </div>
 
     <br><br>
+
+<!-- Add JavaScript function -->
+<script>
+    function promptUsername(orderID) {
+        // Prompt the user to enter their username
+        var username = prompt("Enter your username:");
+
+        // Check if the user entered a valid username
+        if (username !== null && username.trim() !== "") {
+            // Set the value of the hidden username input field
+            document.getElementById('usernameField' + orderID).value = username;
+            
+            // Submit the form after setting the username
+            document.getElementById('orderForm' + orderID).submit();
+        } else {
+            alert("Username cannot be empty. Please enter a valid username.");
+        }
+    }
+</script>
 
     <script>
         $(document).ready(function () {
@@ -291,7 +399,7 @@ $conn->close();
                 </div>
             </div>
             <div class="text-center p-4" style="background-color: rgba(0, 0, 0, 0.05);">© 2024 Copyright:<a
-                    class="text-reset fw-bold" href="#">Hungryme.com</a>
+                    class="text-reset fw-bold" href="http://localhost/Final/HungryMe/HUNGRYME.php">Hungryme.com</a>
             </div>
         </div>
     </footer>

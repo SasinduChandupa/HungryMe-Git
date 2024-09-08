@@ -4,87 +4,7 @@ $username = "root";
 $password = "";
 $dbname = "hungrymedb";
 
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
-
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $totalAmount = isset($_POST['totalAmount']) ? floatval($_POST['totalAmount']) : 0.0;
-    $name = isset($_POST['name']) ? $conn->real_escape_string($_POST['name']) : '';
-    $address = isset($_POST['address']) ? $conn->real_escape_string($_POST['address']) : '';
-    $phonenum = isset($_POST['phonenum']) ? $conn->real_escape_string($_POST['phonenum']) : '';
-    $email = isset($_POST['email']) ? $conn->real_escape_string($_POST['email']) : '';
-    $landmark = isset($_POST['landmark']) ? $conn->real_escape_string($_POST['landmark']) : '';
-    $paymentMethod = isset($_POST['paymentMethod']) ? $conn->real_escape_string($_POST['paymentMethod']) : '';
-    $orderDate = date("Y-m-d H:i:s");
-
-    if (empty($name) || empty($address) || empty($phonenum) || empty($email) || empty($paymentMethod)) {
-        echo "Please fill in all required fields.";
-    } else {
-        $user = isset($_COOKIE['username']) ? $_COOKIE['username'] : null;
-        if ($user) {
-            // Fetch shop names and item names from the cart
-            $sql = "SELECT shop_name, item_name FROM cart WHERE username = ?";
-            if ($stmt = $conn->prepare($sql)) {
-                $stmt->bind_param("s", $user);
-                $stmt->execute();
-                $result = $stmt->get_result();
-
-                $shopNames = [];
-                $itemNames = [];
-
-                while ($row = $result->fetch_assoc()) {
-                    $shopNames[] = $row['shop_name'];
-                    $itemNames[] = $row['item_name'];
-                }
-
-                $shopNamesStr = implode(', ', array_unique($shopNames));
-                $itemNamesStr = implode(', ', $itemNames);
-
-                // Prepare an SQL statement for insertion
-                $stmtInsert = $conn->prepare("INSERT INTO `order` (TotAmount, shopname, menuitem, Name, Address, PhoneNo, Email, Landmarks, PaymentMethod, OrderDate) 
-                                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                if ($stmtInsert === false) {
-                    die("Prepare failed: " . $conn->error);
-                }
-
-                $stmtInsert->bind_param("dsssssssss", $totalAmount, $shopNamesStr, $itemNamesStr, $name, $address, $phonenum, $email, $landmark, $paymentMethod, $orderDate);
-
-                if ($stmtInsert->execute()) {
-                    echo "New record created successfully.<br>";
-                } else {
-                    echo "Error: " . $stmtInsert->error . "<br>";
-                }
-
-                $stmtInsert->close();
-
-                // Optionally clear the cart after processing the order
-                // $conn->query("DELETE FROM cart WHERE username = '$user'");
-
-                $stmt->close();
-            } else {
-                echo "Error preparing statement: " . $conn->error;
-            }
-        } else {
-            echo "Username cookie is not set.";
-        }
-    }
-}
-
-$conn->close();
-?>
-
-
-
-<?php
-// Database connection
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "hungrymedb";
-
+// Create connection
 $conn = new mysqli($servername, $username, $password, $dbname);
 
 // Check connection
@@ -92,32 +12,109 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// Get username from cookie
-$user = isset($_COOKIE['username']) ? $_COOKIE['username'] : null;
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Retrieve customer ID using the username from cookies
+    $customerUsername = $_COOKIE['username'];
+    $query = "SELECT cusID FROM customer WHERE name = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("s", $customerUsername);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $customer = $result->fetch_assoc();
+    $cusID = $customer['cusID'];
 
-if ($user) {
-    // Query to get data from the cart table based on the username
-    $sql = "SELECT shop_name, item_name FROM cart WHERE username = ?";
-    
-    // Prepare the statement
-    if ($stmt = $conn->prepare($sql)) {
-        // Bind parameters
-        $stmt->bind_param("s", $user);
-        
-        // Execute the statement
+    // Retrieve cart ID using customer ID
+    $query = "SELECT cartID FROM cart WHERE cusID = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("i", $cusID);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $cart = $result->fetch_assoc();
+    $cartID = $cart['cartID'];
+
+    // Insert order details into the order table
+    $totalAmount = $_POST['totalAmount'];
+    $name = $_POST['name'];
+    $address = $_POST['address'];
+    $phoneNo = $_POST['phonenum'];
+    $email = $_POST['email'];
+    $landmark = $_POST['landmark'];
+    $paymentMethod = $_POST['paymentMethod'];
+    $orderDate = date("Y-m-d H:i:s");  // Set order date to current date and time
+    $orderStatus = "Pending";  // Example status, you can change as needed
+
+    $query = "INSERT INTO `order` (OrderDate, OrderStatus, TotAmount, Name, Address, PhoneNo, Email, Landmarks, PaymentMethod, CartID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("ssdssssssi", $orderDate, $orderStatus, $totalAmount, $name, $address, $phoneNo, $email, $landmark, $paymentMethod, $cartID);
+
+    if ($stmt->execute()) {
+        $orderID = $conn->insert_id; // Get the ID of the newly created order
+
+        // Retrieve shop names and item names from cookies
+        $shopNames = isset($_COOKIE['shop_names']) ? json_decode($_COOKIE['shop_names'], true) : [];
+        $itemNames = isset($_COOKIE['item_names']) ? json_decode($_COOKIE['item_names'], true) : [];
+
+        // Initialize an array to hold all ShopID values
+        $shopIDList = [];
+
+        // Insert each item into the orderitem table
+        foreach ($shopNames as $index => $shopName) {
+            $itemName = $itemNames[$index];
+
+            // Retrieve ShopID from the shop table
+            $query = "SELECT ShopID FROM shop WHERE ShopName = ?";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("s", $shopName);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $shop = $result->fetch_assoc();
+            $ShopID = $shop['ShopID'];
+
+            // Add ShopID to the list
+            $shopIDList[] = $ShopID;
+
+            // Retrieve MenuItemID from the menuitem table
+            $query = "SELECT MenuItemID FROM menuitem WHERE MenuName = ? AND ShopID = ?";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("si", $itemName, $ShopID);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $menuItem = $result->fetch_assoc();
+            $MenuItemID = $menuItem['MenuItemID'];
+
+            // Insert into orderitem table
+            $query = "INSERT INTO orderitem (orderID, MenuItemID) VALUES (?, ?)";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("ii", $orderID, $MenuItemID);
+            $stmt->execute();
+        }
+
+        // Convert ShopID array to a comma-separated string
+        $shopIDString = implode(",", $shopIDList);
+
+        // Insert the OrderID and comma-separated ShopID string into the ordershop table
+        $query = "INSERT INTO ordershop (orderID, ShopID) VALUES (?, ?)";
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param("is", $orderID, $shopIDString);
         $stmt->execute();
-        
-        // Get result
-        $result = $stmt->get_result();
+
+        // Close the statement and connection
+        $stmt->close();
+        $conn->close();
+
+        // Display a success message with a JavaScript alert and redirect
+        echo "<script>
+        alert('Order Success');
+        window.location.href = 'HUNGRYME-PutOrder.php';
+        </script>";
+        exit();
     } else {
-        // Handle SQL prepare error
-        echo "Error preparing statement: " . $conn->error;
-        exit;
+        echo "Error: " . $stmt->error;
     }
-} else {
-    // Handle missing username
-    echo "Username cookie is not set.";
-    exit;
+
+    // Close the statement and connection if there's an error
+    $stmt->close();
+    $conn->close();
 }
 ?>
 
@@ -250,71 +247,86 @@ if ($user) {
         </script>
     </div>
     <br><br>
+    <label for="CustomerName" style="display: inline-block; font-weight: bold; padding-left: 20px;">Hello</label>
+    <input type="text" id="CustomerName" name="CustomerName" readonly value="<?php echo $_COOKIE['username']; ?>" style="display: inline-block; border: none; font-weight: bold;">
+
     
     <div class="container" id="containerPayment">
-    <button onclick="window.location.href='HUNGRYME-Cart'"  id="navcart" class="cart"><i class="fa-solid fa-cart-shopping fa-xl"></i></button>
-    <h2 class="text-center">Enter your information</h2>
-    <form method="POST" action="#">
-        <div class="form-group">
-            <label for="tot"><b>Total</b></label>
-            <input type="text" class="form-control" id="tot" name="totalAmount" readonly value="<?php echo htmlspecialchars($_COOKIE['totalAmount']); ?>">
-        </div>
-        <div class="form-group">
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>Shop Name</th>
-                        <th>Items</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php while ($row = $result->fetch_assoc()): ?>
-                    <tr>
-                        <td><?php echo htmlspecialchars($row['shop_name']); ?></td>
-                        <td><?php echo htmlspecialchars($row['item_name']); ?></td>
-                    </tr>
-                    <?php endwhile; ?>
-                </tbody>
-            </table>
-        </div>
-        <div class="form-group">
-            <label for="name"><b>Name:</b></label>
-            <input type="text" class="form-control" id="name" name="name" readonly value="<?php echo htmlspecialchars($_COOKIE['username']); ?>">
-        </div>
-        <div class="form-group">
-            <label for="address"><b>Address:</b></label>
-            <input type="text" class="form-control" id="address" name="address" placeholder="Enter your address" required>
-        </div>
-        <div class="form-group">
-            <label for="phonenum"><b>Phone Number:</b></label>
-            <input type="text" class="form-control" id="phonenum" name="phonenum" placeholder="Enter your phone number" required>
-        </div>
-        <div class="form-group">
-            <label for="email"><b>Email:</b></label>
-            <input type="text" class="form-control" id="email" name="email" placeholder="Enter your email" required>
-        </div>
-        <div class="form-group">
-            <label for="landmark"><b>Landmark:</b></label>
-            <textarea class="form-control" id="landmark" name="landmark" placeholder="e.g:- in front of Train Station"></textarea>
-        </div>
+        <button onclick="window.location.href='HUNGRYME-Cart'"  id="navcart" class="cart"><i class="fa-solid fa-cart-shopping fa-xl"></i></button>
+        <h2 class="text-center">Enter your information</h2>
+        <form method="POST" action="#">
+            <div class="form-group">
+                <label for="tot"><b>Total</b></label>
+                <input type="text" class="form-control" id="tot" name="totalAmount" readonly value="<?php echo $_COOKIE['totalPrice']; ?>" style="display: inline-block; border: none; font-weight: bold;">
+            </div>
+            <div class="form-group">
+            <?php
+                    // Retrieve and decode cookies
+                    $shopNames = isset($_COOKIE['shop_names']) ? json_decode($_COOKIE['shop_names'], true) : [];
+                    $itemNames = isset($_COOKIE['item_names']) ? json_decode($_COOKIE['item_names'], true) : [];
+                    ?>
 
-        <h2 class="text-center"><b>Payment Options</b></h2>
-        <div class="form-group">
-            <label for="paymentMethod"><b>Select Payment Method:</b></label>
-            <select class="form-control" id="paymentMethod" name="paymentMethod" onchange="handlePaymentChange()">
-                <option value="cod">Cash on Delivery</option>
-                <option value="online">Online Payment</option>
-            </select>
-        </div>
-        <center><button type="submit" class="btn btn-primary">Place Order</button></center>
-    </form> 
-</div>
+                    <html>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Shop Name</th>
+                                <th>Items</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            // Combine shop names and item names into rows
+                            $maxItems = max(count($shopNames), count($itemNames));
+                            for ($i = 0; $i < $maxItems; $i++):
+                            ?>
+                                <tr>
+                                    <td><?php echo isset($shopNames[$i]) ? $shopNames[$i] : ''; ?></td>
+                                    <td><?php echo isset($itemNames[$i]) ? $itemNames[$i] : ''; ?></td>
+                                </tr>
+                            <?php endfor; ?>
+                        </tbody>
+                    </table>
 
-    <?php
-    // Close connection
-    $stmt->close();
-    $conn->close();
-    ?>
+
+            </div>
+            <div>
+                <input type="checkbox" id="addon" name="addon">
+                <label for="addon"><b>Add Addon items</b></label>
+                <p>term & condition below</p>
+            </div>
+            <div class="form-group">
+                <label for="name"><b>Name:</b></label>
+                <input type="text" class="form-control" id="name" name="name" placeholder="Enter your name" required>
+            </div>
+            <div class="form-group">
+                <label for="address"><b>Address:</b></label>
+                <input type="text" class="form-control" id="address" name="address" placeholder="Enter your address" required>
+            </div>
+            <div class="form-group">
+                <label for="phonenum"><b>Phone Number:</b></label>
+                <input type="text" class="form-control" id="phonenum" name="phonenum" placeholder="Enter your phone number" required>
+            </div>
+            <div class="form-group">
+                <label for="email"><b>Email:</b></label>
+                <input type="text" class="form-control" id="email" name="email" placeholder="Enter your email" required>
+            </div>
+            <div class="form-group">
+                <label for="landmark"><b>Landmark:</b></label>
+                <textarea class="form-control" id="landmark" name="landmark" placeholder="e.g:- in front of Train Station"></textarea>
+            </div>
+
+            <h2 class="text-center"><b>Payment Options</b></h2>
+            <div class="form-group">
+                <label for="paymentMethod"><b>Select Payment Method:</b></label>
+                <select class="form-control" id="paymentMethod" name="paymentMethod" onchange="handlePaymentChange()">
+                    <option value="cod">Cash on Delivery</option>
+                    <option value="online">Online Payment</option>
+                </select>
+            </div>
+            <center><button type="submit" class="btn btn-primary">Place Order</button></center>
+        </form> 
+    </div>
 
     <br><br>
 
@@ -361,6 +373,37 @@ if ($user) {
             }
         }
     </script>
+
+    <center>
+    <p style="font-weight: bold; font-size:16px">If you choose an addon,<br> the following will be added to your meal <br> an additional fee will be charged</p><br>
+    <table style="border-collapse: collapse; width: auto; border: 1px solid black;">
+        <thead>
+            <tr>
+                <th style="border: 1px solid black; padding: 8px; background-color: #f2f2f2; text-align: center;">Item</th>
+                <th style="border: 1px solid black; padding: 8px; background-color: #f2f2f2; text-align: center;">Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="border: 1px solid black; padding: 8px;">Rice</td>
+                <td style="border: 1px solid black; padding: 8px;">Meat, Egg, Sausages</td>
+            </tr>
+            <tr>
+                <td style="border: 1px solid black; padding: 8px;">Kottu</td>
+                <td style="border: 1px solid black; padding: 8px;">Meat, Egg, Sausages, Spice</td>
+            </tr>
+            <tr>
+                <td style="border: 1px solid black; padding: 8px;">Noodle</td>
+                <td style="border: 1px solid black; padding: 8px;">Meat, Egg, Sausages, Vegetable</td>
+            </tr>
+            <tr>
+                <td style="border: 1px solid black; padding: 8px;">Pizza</td>
+                <td style="border: 1px solid black; padding: 8px;">Cheese, Meat, Vegetable</td>
+            </tr>
+        </tbody>
+    </table>
+    </center>
+    <br><br><br>
     <footer>
         <div class="text-center text-lg-start" id="footer">
 
@@ -392,7 +435,7 @@ if ($user) {
                 </div>
             </div>
             <div class="text-center p-4" style="background-color: rgba(0, 0, 0, 0.05);">© 2024 Copyright:<a
-                    class="text-reset fw-bold" href="#">Hungryme.com</a>
+                    class="text-reset fw-bold" href="http://localhost/Final/HungryMe/HUNGRYME.php">Hungryme.com</a>
             </div>
         </div>
     </footer>

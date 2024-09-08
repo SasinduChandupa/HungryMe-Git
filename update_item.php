@@ -18,7 +18,6 @@ try {
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['updateMenuItem'])) {
     $itemId = $_POST['MenuItemID'];
     $shopOwnerID = $_POST['ShopOwnerID'];
-    $shopOwnerName = $_POST['ShopOwnerName'];
     $menuitemName = $_POST['menuitemName'];
     $menuitemLocation = $_POST['menuitemLocation'];
     $menuitemDistrict = $_POST['menuitemDistrict'];
@@ -50,7 +49,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['updateMenuItem'])) {
     // Prepare SQL query
     $sql = "UPDATE menuitem SET
             ShopID = :shopOwnerID,
-            ShopName = :shopOwnerName,
             MenuName = :menuitemName,
             Location = :menuitemLocation,
             District = :menuitemDistrict,
@@ -64,7 +62,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['updateMenuItem'])) {
     // Bind parameters
     $stmt->bindParam(':itemId', $itemId);
     $stmt->bindParam(':shopOwnerID', $shopOwnerID);
-    $stmt->bindParam(':shopOwnerName', $shopOwnerName);
     $stmt->bindParam(':menuitemName', $menuitemName);
     $stmt->bindParam(':menuitemLocation', $menuitemLocation);
     $stmt->bindParam(':menuitemDistrict', $menuitemDistrict);
@@ -74,7 +71,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['updateMenuItem'])) {
 
     // Execute the query
     if ($stmt->execute()) {
-        echo "Menu item updated successfully.";
+        header("Location: HUNGRYME-ShopOwner.php");
     } else {
         echo "Error updating menu item.";
     }
