@@ -40,26 +40,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = $_POST['email'];
     $landmark = $_POST['landmark'];
     $paymentMethod = $_POST['paymentMethod'];
-    $orderDate = date("Y-m-d H:i:s");  // Set order date to current date and time
-    $orderStatus = "Pending";  // Example status, you can change as needed
+    $orderDate = date("Y-m-d H:i:s");  //current date and time
+    $orderStatus = "Pending";
 
     $query = "INSERT INTO `order` (OrderDate, OrderStatus, TotAmount, Name, Address, PhoneNo, Email, Landmarks, PaymentMethod, CartID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt = $conn->prepare($query);
     $stmt->bind_param("ssdssssssi", $orderDate, $orderStatus, $totalAmount, $name, $address, $phoneNo, $email, $landmark, $paymentMethod, $cartID);
 
     if ($stmt->execute()) {
-        $orderID = $conn->insert_id; // Get the ID of the newly created order
+        $orderID = $conn->insert_id; 
 
-        // Retrieve shop names and item names from cookies
+        // shop names and item names from cookies
         $shopNames = isset($_COOKIE['shop_names']) ? json_decode($_COOKIE['shop_names'], true) : [];
         $itemNames = isset($_COOKIE['item_names']) ? json_decode($_COOKIE['item_names'], true) : [];
+        $itemQuantity = isset($_COOKIE['item_quantities']) ? json_decode($_COOKIE['item_quantities'], true) : [];
+        $addons = isset($_COOKIE['addons']) ? json_decode($_COOKIE['addons'], true) : [];
+        $itemdescription = isset($_COOKIE['item_Description']) ? json_decode($_COOKIE['item_Description'], true) : [];
+
+
 
         // Initialize an array to hold all ShopID values
         $shopIDList = [];
 
         // Insert each item into the orderitem table
         foreach ($shopNames as $index => $shopName) {
-            $itemName = $itemNames[$index];
+            $itemDescriptions = $itemdescription[$index];
 
             // Retrieve ShopID from the shop table
             $query = "SELECT ShopID FROM shop WHERE ShopName = ?";
@@ -74,9 +79,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $shopIDList[] = $ShopID;
 
             // Retrieve MenuItemID from the menuitem table
-            $query = "SELECT MenuItemID FROM menuitem WHERE MenuName = ? AND ShopID = ?";
+            $query = "SELECT MenuItemID FROM menuitem WHERE Description = ? AND ShopID = ?";
             $stmt = $conn->prepare($query);
-            $stmt->bind_param("si", $itemName, $ShopID);
+            $stmt->bind_param("si", $itemDescriptions, $ShopID);
             $stmt->execute();
             $result = $stmt->get_result();
             $menuItem = $result->fetch_assoc();
@@ -89,20 +94,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute();
         }
 
-        // Convert ShopID array to a comma-separated string
+        // Convert ShopID array to a comma-separated
         $shopIDString = implode(",", $shopIDList);
 
-        // Insert the OrderID and comma-separated ShopID string into the ordershop table
+        // Insert the OrderID and comma-separated ShopID s
         $query = "INSERT INTO ordershop (orderID, ShopID) VALUES (?, ?)";
         $stmt = $conn->prepare($query);
         $stmt->bind_param("is", $orderID, $shopIDString);
         $stmt->execute();
 
+         // Retrieve the AddonID from the addon table
+         $query = "SELECT AddonID FROM addon LIMIT 1";
+         $result = $conn->query($query);
+         $addon = $result->fetch_assoc();
+         $AddonID = $addon['AddonID'];
+ 
+         // If addon is selected, update the orderitem table with AddonID
+         if (isset($_COOKIE['addAddon']) && $_COOKIE['addAddon'] === 'true') {
+             $query = "UPDATE orderitem SET AddonID = ? WHERE orderID = ?";
+             $stmt = $conn->prepare($query);
+             $stmt->bind_param("ii", $AddonID, $orderID);
+             $stmt->execute();
+         }
+
         // Close the statement and connection
         $stmt->close();
         $conn->close();
 
-        // Display a success message with a JavaScript alert and redirect
         echo "<script>
         alert('Order Success');
         window.location.href = 'HUNGRYME-PutOrder.php';
@@ -213,7 +231,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             var secondText = "Join us to quench your hunger...";
             var speed = 50;
             var phase = 1;
-
+ 
             function typeWriter() {
                 if (phase === 1) {
                     if (i < firstText.length) {
@@ -260,41 +278,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="text" class="form-control" id="tot" name="totalAmount" readonly value="<?php echo $_COOKIE['totalPrice']; ?>" style="display: inline-block; border: none; font-weight: bold;">
             </div>
             <div class="form-group">
-            <?php
-                    // Retrieve and decode cookies
-                    $shopNames = isset($_COOKIE['shop_names']) ? json_decode($_COOKIE['shop_names'], true) : [];
-                    $itemNames = isset($_COOKIE['item_names']) ? json_decode($_COOKIE['item_names'], true) : [];
-                    ?>
-
-                    <html>
-                    <table class="table table-bordered">
-                        <thead>
+                <?php
+                // Retrieve and decode cookies
+                $shopNames = isset($_COOKIE['shop_names']) ? json_decode($_COOKIE['shop_names'], true) : [];
+                $itemNames = isset($_COOKIE['item_names']) ? json_decode($_COOKIE['item_names'], true) : [];
+                $itemdescription = isset($_COOKIE['item_Description']) ? json_decode($_COOKIE['item_Description'], true) : [];
+                ?>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Shop Name</th>
+                            <th>Items</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        // Combine shop names and item names into rows
+                        $maxItems = max(count($shopNames), count($itemNames));
+                        for ($i = 0; $i < $maxItems; $i++):
+                        ?>
                             <tr>
-                                <th>Shop Name</th>
-                                <th>Items</th>
+                                <td><?php echo isset($shopNames[$i]) ? $shopNames[$i] : ''; ?></td>
+                                <td><?php echo isset($itemNames[$i]) ? $itemNames[$i] : ''; ?></td>
+                                <td><?php echo isset($itemdescription[$i]) ? $itemdescription[$i] : ''; ?></td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            <?php
-                            // Combine shop names and item names into rows
-                            $maxItems = max(count($shopNames), count($itemNames));
-                            for ($i = 0; $i < $maxItems; $i++):
-                            ?>
-                                <tr>
-                                    <td><?php echo isset($shopNames[$i]) ? $shopNames[$i] : ''; ?></td>
-                                    <td><?php echo isset($itemNames[$i]) ? $itemNames[$i] : ''; ?></td>
-                                </tr>
-                            <?php endfor; ?>
-                        </tbody>
-                    </table>
-
-
+                        <?php endfor; ?>
+                    </tbody>
+                </table>
             </div>
-            <div>
-                <input type="checkbox" id="addon" name="addon">
-                <label for="addon"><b>Add Addon items</b></label>
-                <p>term & condition below</p>
+            <div class="form-group">
+                <label for="addonStatus"><b>Add Addon items:</b></label>
+                <p id="addonStatus">Cookie status will be displayed here.</p>
             </div>
+            <script>
+                // Function to get a cookie by name
+                function getCookie(name) {
+                    let nameEQ = name + "=";
+                    let ca = document.cookie.split(';');
+                    for (let i = 0; i < ca.length; i++) {
+                        let c = ca[i];
+                        while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+                        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+                    }
+                    return null;
+                }
+
+                // Function to display the checkbox status
+                function displayCheckboxStatus() {
+                    let isChecked = getCookie("addAddon") === "true";
+                    let statusText = isChecked ? "Addon is selected." : "Addon is not selected.";
+                    document.getElementById("addonStatus").textContent = statusText;
+                }
+
+                // Display the checkbox status on page load
+                displayCheckboxStatus();
+            </script>
+
             <div class="form-group">
                 <label for="name"><b>Name:</b></label>
                 <input type="text" class="form-control" id="name" name="name" placeholder="Enter your name" required>

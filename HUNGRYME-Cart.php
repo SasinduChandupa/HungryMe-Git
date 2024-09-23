@@ -54,10 +54,11 @@ if ($result->num_rows > 0) {
                 $quantity = $menuItemRow['Quantity'];
 
                 // Fetch item details
-                $itemDetailsSql = "SELECT m.MenuName, m.Price, m.ImagePath, s.ShopName
-                                   FROM menuitem m
-                                   JOIN shop s ON m.ShopID = s.ShopID
-                                   WHERE m.MenuItemID = ?";
+                $itemDetailsSql = "SELECT m.MenuName, m.Price, m.ImagePath, m.Description, s.ShopName
+                FROM menuitem m
+                JOIN shop s ON m.ShopID = s.ShopID
+                WHERE m.MenuItemID = ?";
+
                 $itemDetailsStmt = $conn->prepare($itemDetailsSql);
                 $itemDetailsStmt->bind_param("i", $menuItemID);
                 $itemDetailsStmt->execute();
@@ -70,9 +71,11 @@ if ($result->num_rows > 0) {
                         'Price' => $itemDetailsRow['Price'],
                         'Quantity' => $quantity,
                         'ImagePath' => $itemDetailsRow['ImagePath'],
+                        'Description' => $itemDetailsRow['Description'],
                         'CartID' => $cartID,
                         'MenuItemID' => $menuItemID
                     ];
+                    
                      // Update totalPrice
                      $totalPrice += $itemDetailsRow['Price'] * $quantity;
 
@@ -80,16 +83,20 @@ if ($result->num_rows > 0) {
                     $shopNames = [];
                     $itemNames = [];
                     $itemQuantity =[];
+                    $itemdescription = [];
 
                     // Collect shop names and item names
                     foreach ($cartItems as $item) {
                         $shopNames[] = $item['ShopName'];
                         $itemNames[] = $item['MenuName'];
+                        $itemdescription[] = $item['Description'];
                     }
 
                     // Set cookies for shop names and item names
                     setcookie("shop_names", json_encode($shopNames), time() + 3600, "/");
                     setcookie("item_names", json_encode($itemNames), time() + 3600, "/");
+                    setcookie("item_Description", json_encode($itemdescription), time() + 3600, "/");
+
                 }
                 $itemDetailsStmt->close();
             }
@@ -260,80 +267,141 @@ $conn->close();
         }
     </script>
 
-    <center>
+<script>
+    // Function to set a cookie
+    function setCookie(name, value, days) {
+        let expires = "";
+        if (days) {
+            let date = new Date();
+            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+            expires = "; expires=" + date.toUTCString();
+        }
+        document.cookie = name + "=" + (value || "") + expires + "; path=/";
+    }
+
+    // Function to get a cookie value
+    function getCookie(name) {
+        let nameEQ = name + "=";
+        let ca = document.cookie.split(';');
+        for (let i = 0; i < ca.length; i++) {
+            let c = ca[i];
+            while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+            if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+        }
+        return null;
+    }
+
+    // Function to handle checkbox state
+    function handleCheckboxChange() {
+        let checkbox = document.getElementById('addAddon');
+        setCookie('addAddon', checkbox.checked ? 'true' : 'false', 365); // Cookie expires in 365 days
+    }
+
+    // Initialize checkbox state from cookie
+    function initializeCheckbox() {
+        let checkbox = document.getElementById('addAddon');
+        let cookieValue = getCookie('addAddon');
+        checkbox.checked = (cookieValue === 'true');
+    }
+
+    // Set up event listeners when the DOM is fully loaded
+    document.addEventListener('DOMContentLoaded', () => {
+        initializeCheckbox();
+        document.getElementById('addAddon').addEventListener('change', handleCheckboxChange);
+    });
+</script>
+
+
+<center>
     <table border='1' cellpadding='10' cellspacing='0' style='border-collapse: collapse; text-align: center;'>
-        <thead>
-            <tr>
-                <th>Item Name</th>
-                <th>Shop Name</th>
-                <th>Price (Rs.)</th>
-                <th>Quantity</th>
-                <th>Image</th>
-                <th>Remove</th>
+    <thead>
+    <tr>
+        <th>Item Name</th>
+        <th>Shop Name</th>
+        <th>Description</th> 
+        <th>Price (Rs.)</th>
+        <th>Quantity</th>
+        <th>Image</th>
+        <th>Remove</th>
+    </tr>
+</thead>
+
+<tbody>
+    <?php if (!empty($cartItems)): ?>
+        <?php foreach ($cartItems as $item): ?>
+            <tr id="cart-item-<?php echo $item['CartID'] . '-' . $item['MenuItemID']; ?>">
+                <td><?php echo $item['MenuName']; ?></td>
+                <td><?php echo $item['ShopName']; ?></td>
+                <td><?php echo $item['Description']; ?></td>
+                <td class="price"><?php echo $item['Price']; ?></td>
+                <td>
+                    <button class="decrease-quantity" data-cart-id="<?php echo $item['CartID']; ?>" data-menu-item-id="<?php echo $item['MenuItemID']; ?>">-</button>
+                    <span class="quantity"><?php echo $item['Quantity']; ?></span>
+                    <button class="increase-quantity" data-cart-id="<?php echo $item['CartID']; ?>" data-menu-item-id="<?php echo $item['MenuItemID']; ?>">+</button>
+                </td>
+                <td><img src="<?php echo $item['ImagePath']; ?>" alt="Image" width="100"></td>
+                <td>
+                    <button class="remove-item" data-cart-id="<?php echo $item['CartID']; ?>" data-menu-item-id="<?php echo $item['MenuItemID']; ?>">Remove</button>
+                </td>
             </tr>
-        </thead>
-        <tbody>
-            <?php if (!empty($cartItems)): ?>
-                <?php foreach ($cartItems as $item): ?>
-                    <tr id="cart-item-<?php echo $item['CartID'] . '-' . $item['MenuItemID']; ?>">
-                        <td><?php echo $item['MenuName']; ?></td>
-                        <td><?php echo $item['ShopName']; ?></td>
-                        <td class="price"><?php echo $item['Price']; ?></td>
-                        <td>
-                            <button class="decrease-quantity" data-cart-id="<?php echo $item['CartID']; ?>"
-                                data-menu-item-id="<?php echo $item['MenuItemID']; ?>">-</button>
-                            <span class="quantity"><?php echo $item['Quantity']; ?></span>
-                            <button class="increase-quantity" data-cart-id="<?php echo $item['CartID']; ?>"
-                                data-menu-item-id="<?php echo $item['MenuItemID']; ?>">+</button>
-                        </td>
-                        <td><img src="<?php echo $item['ImagePath']; ?>" alt="Image" width="100"></td>
-                        <td>
-                            <button class="remove-item" data-cart-id="<?php echo $item['CartID']; ?>"
-                                data-menu-item-id="<?php echo $item['MenuItemID']; ?>">Remove</button>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <tr>
-                    <td colspan="6">Your cart is empty</td>
-                </tr>
-            <?php endif; ?>
-        </tbody>
+        <?php endforeach; ?>
+    <?php else: ?>
+        <tr>
+            <td colspan="7">Your cart is empty</td>
+        </tr>
+    <?php endif; ?>
+</tbody>
+
     </table>
 </center>
 <br>
 <center>
+    <!-- Add Addon Checkbox -->
+    <label for="addAddon">Add Addon:</label>
+    <input type="checkbox" class="persistent-checkbox" id="addAddon" name="addAddon" value="addon">
+    <br><br>
+
     <label for="totalPrice">Total Price:</label>
     <input type="text" id="totalPrice" readonly>
 </center>
+<br>
+<center>
+    <button id="continueShopping" class="btn btn-primary">Continue Shopping</button>
+    <button id="placeOrder" class="btn btn-success">Place Order</button>
+</center>
 
+<script>
+    document.getElementById('continueShopping').addEventListener('click', function() {
+        window.location.href = 'HUNGRYME.php';
+    });
 
-    <br>
-    <br>
-    <center>
-        <button id="continueShopping" class="btn btn-primary">Continue Shopping</button>
-        <button id="placeOrder" class="btn btn-success">Place Order</button>
-    </center>
-
-    <script>
-        document.getElementById('continueShopping').addEventListener('click', function() {
-            window.location.href = 'HUNGRYME.php';
-        });
-
-        document.getElementById('placeOrder').addEventListener('click', function() {
-            window.location.href = 'HUNGRYME-PutOrder.php';
-        });
-    </script>
-
-    <script>
+    document.getElementById('placeOrder').addEventListener('click', function() {
+        window.location.href = 'HUNGRYME-PutOrder.php';
+    });
+    
     document.addEventListener("DOMContentLoaded", function () {
-        let total = 0;
+        let addonPrice = 0;
 
-        document.querySelectorAll('.price').forEach(function (element) {
-            total += parseFloat(element.textContent);
+        // Calculate initial total based on quantity and price
+        updateTotalPrice();
+
+        // Update total price and AddonID when Add Addon checkbox is toggled
+        document.getElementById('addAddon').addEventListener('change', function () {
+            if (this.checked) {
+                // Fetch the addon price
+                fetchAddonPrice(function(price) {
+                    addonPrice = parseFloat(price);
+                    updateTotalPrice(); 
+                    updateAddonInDatabase(1);
+                });
+            } else {
+                addonPrice = 0; 
+                updateTotalPrice(); 
+                updateAddonInDatabase(0); 
+            }
         });
-        document.getElementById('totalPrice').value = total.toFixed(2);
 
+        // Increase quantity button
         document.querySelectorAll('.increase-quantity').forEach(function (button) {
             button.addEventListener('click', function () {
                 let quantitySpan = this.previousElementSibling;
@@ -345,11 +413,11 @@ $conn->close();
                 let menuItemID = this.getAttribute('data-menu-item-id');
 
                 updateQuantityInDatabase(cartID, menuItemID, quantity);
-
                 updateTotalPrice();
             });
         });
 
+        // Decrease quantity button
         document.querySelectorAll('.decrease-quantity').forEach(function (button) {
             button.addEventListener('click', function () {
                 let quantitySpan = this.nextElementSibling;
@@ -362,47 +430,44 @@ $conn->close();
                     let menuItemID = this.getAttribute('data-menu-item-id');
 
                     updateQuantityInDatabase(cartID, menuItemID, quantity);
-
                     updateTotalPrice();
                 }
             });
         });
 
-      // Function to handle item removal
-document.querySelectorAll('.remove-item').forEach(function(button) {
-    button.addEventListener('click', function() {
-        var cartID = this.getAttribute('data-cart-id');
-        var menuItemID = this.getAttribute('data-menu-item-id');
+        // Handle item removal
+        document.querySelectorAll('.remove-item').forEach(function(button) {
+            button.addEventListener('click', function() {
+                var cartID = this.getAttribute('data-cart-id');
+                var menuItemID = this.getAttribute('data-menu-item-id');
 
-        // Send an AJAX request to the PHP file to remove the item
-        var xhr = new XMLHttpRequest();
-        xhr.open('POST', 'removeCartItem.php', true);
-        xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-        xhr.onload = function() {
-            if (xhr.status === 200) {
-                // On success, remove the row from the table
-                document.getElementById('cart-item-' + cartID + '-' + menuItemID).remove();
-                
-                // Optionally, update the total price
-                updateTotalPrice();
-            }
-        };
-        xhr.send('cartID=' + cartID + '&menuItemID=' + menuItemID); // Send the CartID and MenuItemID to the PHP file
-    });
-});
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', 'removeCartItem.php', true);
+                xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        document.getElementById('cart-item-' + cartID + '-' + menuItemID).remove();
+                        updateTotalPrice();
+                    }
+                };
+                xhr.send('cartID=' + cartID + '&menuItemID=' + menuItemID);
+            });
+        });
 
+        function updateTotalPrice() {
+            let totalPrice = 0;
+            document.querySelectorAll('tr[id^="cart-item-"]').forEach(function (row) {
+                let price = parseFloat(row.querySelector('.price').textContent);
+                let quantity = parseInt(row.querySelector('.quantity').textContent);
+                totalPrice += price * quantity;
 
-function updateTotalPrice() {
-    // Get all the price elements and sum them
-    var prices = document.querySelectorAll('.price');
-    var totalPrice = 0;
-    prices.forEach(function(priceElement) {
-        totalPrice += parseFloat(priceElement.textContent);
-    });
-
-    // Update the total price input
-    document.getElementById('totalPrice').value = totalPrice.toFixed(2);
-}
+                // Add addon price for each item based on its quantity
+                if (document.getElementById('addAddon').checked) {
+                    totalPrice += addonPrice * quantity;
+                }
+            });
+            document.getElementById('totalPrice').value = totalPrice.toFixed(2);
+        }
 
         function updateQuantityInDatabase(cartID, menuItemID, quantity) {
             $.ajax({
@@ -421,11 +486,75 @@ function updateTotalPrice() {
                 }
             });
         }
+
+        // Function to fetch the addon price from the server
+        function fetchAddonPrice(callback) {
+            $.ajax({
+                url: 'getAddonPrice.php',  
+                type: 'POST',
+                data: {
+                    AddonID: 1
+                },
+                success: function (response) {
+                    callback(response); 
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error fetching addon price: ' + error);
+                }
+            });
+        }
+
+        // Function to update AddonID in the database
+        function updateAddonInDatabase(addonID) {
+            $.ajax({
+                url: 'update_addon_in_orderitem.php',
+                type: 'POST',
+                data: {
+                    AddonID: addonID
+                },
+                success: function (response) {
+                    console.log('AddonID updated successfully');
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error updating AddonID: ' + error);
+                }
+            });
+        }
     });
+</script>
 
-    </script>
-
-<br><br><br><br>
+<br><br>
+<center>
+    <p style="font-weight: bold; font-size:16px">If you choose an addon,<br> the following will be added to your meal <br> an additional fee will be charged</p><br>
+    <table style="border-collapse: collapse; width: auto; border: 1px solid black;">
+        <thead>
+            <tr>
+                <th style="border: 1px solid black; padding: 8px; background-color: #f2f2f2; text-align: center;">Item</th>
+                <th style="border: 1px solid black; padding: 8px; background-color: #f2f2f2; text-align: center;">Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="border: 1px solid black; padding: 8px;">Rice</td>
+                <td style="border: 1px solid black; padding: 8px;">Meat, Egg, Sausages</td>
+            </tr>
+            <tr>
+                <td style="border: 1px solid black; padding: 8px;">Kottu</td>
+                <td style="border: 1px solid black; padding: 8px;">Meat, Egg, Sausages, Spice</td>
+            </tr>
+            <tr>
+                <td style="border: 1px solid black; padding: 8px;">Noodle</td>
+                <td style="border: 1px solid black; padding: 8px;">Meat, Egg, Sausages, Vegetable</td>
+            </tr>
+            <tr>
+                <td style="border: 1px solid black; padding: 8px;">Pizza</td>
+                <td style="border: 1px solid black; padding: 8px;">Cheese, Meat, Vegetable</td>
+            </tr>
+        </tbody>
+    </table>
+    </center>
+    <br><br><br>
+    
     <!-- Footer -->
     <footer>
         <div class="text-center text-lg-start" id="footer">

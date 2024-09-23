@@ -1,5 +1,4 @@
 <?php
-// update_item.php
 
 // Database connection
 $servername = "localhost";
@@ -27,7 +26,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['updateMenuItem'])) {
     // Handle file upload
     $menuitemImage = null;
     if (isset($_FILES['menuitemImage']) && $_FILES['menuitemImage']['error'] == UPLOAD_ERR_OK) {
-        $target_dir = "uploads/"; // Directory where images will be uploaded
+        $target_dir = "uploads/";
         $target_file = $target_dir . basename($_FILES["menuitemImage"]["name"]);
         $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
         

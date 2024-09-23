@@ -31,15 +31,41 @@ if ($conn->connect_error) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $order_id = $_POST['order_id'];
+    $delivery_boy_username = $_POST['delivery_boy_username'];
 
-    $stmt = $conn->prepare("UPDATE `order` SET OrderStatus = 'delivered' WHERE OrderID = ?");
-    $stmt->bind_param("i", $order_id); 
+    // Fetch the DeliveryBoyID for the entered username
+    $stmt = $conn->prepare("SELECT DeliveryBoyID FROM deliveryboy WHERE Name = ?");
+    $stmt->bind_param("s", $delivery_boy_username);
+    $stmt->execute();
+    $stmt->bind_result($delivery_boy_id);
+    $stmt->fetch();
+    $stmt->close();
 
-    if ($stmt->execute()) {
-        header("Location: HUNGRYME-DeliveryBoy.php");
-        exit();
+    if ($delivery_boy_id) {
+        // Check if the DeliveryBoyID matches the one in the order table
+        $stmt = $conn->prepare("SELECT DeliveryBoyID FROM `order` WHERE OrderID = ?");
+        $stmt->bind_param("i", $order_id);
+        $stmt->execute();
+        $stmt->bind_result($order_delivery_boy_id);
+        $stmt->fetch();
+        $stmt->close();
+
+        if ($order_delivery_boy_id == $delivery_boy_id) {
+            // Update the order status to 'delivered'
+            $stmt = $conn->prepare("UPDATE `order` SET OrderStatus = 'delivered' WHERE OrderID = ?");
+            $stmt->bind_param("i", $order_id);
+
+            if ($stmt->execute()) {
+                echo "<script>alert('Order Delivery Success'); window.location.href = 'HUNGRYME-DeliveryBoy.php';</script>";
+                exit();
+            } else {
+                echo "Error updating record: " . $stmt->error;
+            }
+        } else {
+            echo "<script>alert('Delivery Boy ID does not match with the order!'); window.location.href = 'HUNGRYME-DeliveryBoy.php';</script>";
+        }
     } else {
-        echo "Error updating record: " . $stmt->error;
+        echo "<script>alert('Invalid Delivery Boy Username!'); window.location.href = 'HUNGRYME-DeliveryBoy.php';</script>";
     }
 
     $stmt->close();
@@ -47,6 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $conn->close();
 ?>
+
 
 
 <?php
@@ -102,13 +129,14 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// Query to get the order details with menu items grouped by OrderID
-$sql = "SELECT o.OrderID, o.OrderDate, o.Landmarks, o.Address, o.PhoneNo, o.Name, 
-        GROUP_CONCAT(mi.MenuName SEPARATOR ', ') as MenuItems, s.ShopName
+// Query to get the order details with menu items grouped by OrderID and filtering by OrderStatus
+$sql = "SELECT o.OrderID, o.OrderDate, o.Landmarks, o.Address, o.PhoneNo, o.Name, o.OrderStatus,
+        GROUP_CONCAT(mi.MenuName SEPARATOR ', ') as MenuItems, s.ShopName, o.TotAmount, o.PaymentMethod
         FROM `order` o 
         JOIN orderitem oi ON o.OrderID = oi.OrderID
         JOIN menuitem mi ON oi.MenuItemID = mi.MenuItemID
         JOIN shop s ON mi.ShopID = s.ShopID
+        WHERE o.OrderStatus IN ('On the Way', 'Pending') 
         GROUP BY o.OrderID";
 
 $result = $conn->query($sql);
@@ -126,8 +154,11 @@ if ($result->num_rows > 0) {
             'OrderDate' => $row['OrderDate'],
             'Landmarks' => $row['Landmarks'],
             'OID' => $row['OrderID'],
-            'shopname' => $row['ShopName'], // Shop Name
-            'menuitem' => $row['MenuItems'], // Menu items concatenated
+            'OrderStatus' => $row['OrderStatus'],
+            'shopname' => $row['ShopName'], 
+            'menuitem' => $row['MenuItems'], 
+            'TotAmount' => $row['TotAmount'], 
+            'PaymentMethod' => $row['PaymentMethod'] 
         ];
     }
 }
@@ -171,7 +202,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['order_id']) && isset(
 
         if ($stmtUpdateOrder->execute()) {
             // Redirect back to the same page to reflect the button color change
-            header("Location: HUNGRYME-DeliveryBoy.php"); // Replace with the actual page URL
+            header("Location: HUNGRYME-DeliveryBoy.php"); 
             exit();
         } else {
             echo "Error updating order: " . $conn->error;
@@ -275,35 +306,42 @@ $conn->close();
 
     <br><br>
 
-    <div class="container">
+    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
         <h2 class="text-center">Delivery Details</h2>
-        <table class="table table-bordered">
+        <center>
+        <table class="table table-bordered" style="max-width: 1500px;">
             <thead>
                 <tr>
-                    <th>CusName</th>
-                    <th>Address</th>
-                    <th>PhoneNumber</th>
-                    <th>Location</th>
-                    <th>Land Mark</th>
                     <th>OID</th>
+                    <th>Customer Name</th>
+                    <th>Address</th>
+                    <th>Phone Number</th>
+                    <th>Order Date</th>
+                    <th>Land Mark</th>
                     <th>Shop Names</th>
                     <th>Item Names</th>
-                    <th>Click the Order</th>
+                    <th>Total Price</th>
+                    <th>Payment method</th>
                     <th>Order Status </th>
+                    <th>Click the Order</th>
+                    <th>Status</th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (!empty($orderDetails)): ?>
                     <?php foreach ($orderDetails as $order): ?>
                         <tr>
+                            <td><?php echo htmlspecialchars($order['OID']); ?></td>
                             <td><?php echo htmlspecialchars($order['Name']); ?></td>
                             <td><?php echo htmlspecialchars($order['Address']); ?></td>
                             <td><?php echo htmlspecialchars($order['PhoneNo']); ?></td>
                             <td><?php echo htmlspecialchars($order['OrderDate']); ?></td>
                             <td><?php echo htmlspecialchars($order['Landmarks']); ?></td>
-                            <td><?php echo htmlspecialchars($order['OID']); ?></td>
-                            <td><?php echo htmlspecialchars($order['shopname']); ?></td> <!-- Display Shop Name -->
-                            <td><?php echo htmlspecialchars($order['menuitem']); ?></td> <!-- Display Menu Items concatenated -->
+                            <td><?php echo htmlspecialchars($order['shopname']); ?></td> 
+                            <td><?php echo htmlspecialchars($order['menuitem']); ?></td>
+                            <td><?php echo htmlspecialchars($order['TotAmount']); ?></td>
+                            <td><?php echo htmlspecialchars($order['PaymentMethod']); ?></td>
+                            <td><?php echo htmlspecialchars($order['OrderStatus']); ?></td>
                             <td>
                                 <!-- Click Order button -->
                                 <form id="orderForm<?php echo htmlspecialchars($order['OID']); ?>" method="POST" action="HUNGRYME-editDelivery.php">
@@ -319,12 +357,26 @@ $conn->close();
                                 </form>
                             </td>
                             <td>
-                                <!-- Complete Order button -->
-                                <form method="POST" action="HUNGRYME-DeliveryBoy.php">
+                                <form id="completeOrderForm" method="POST" action="HUNGRYME-DeliveryBoy.php">
                                     <input type="hidden" name="order_id" value="<?php echo htmlspecialchars($order['OID']); ?>">
-                                    <button type="submit" class="btn btn-primary">Complete Order</button>
+                                    <button type="button" class="btn btn-primary" onclick="openUsernamePrompt()">Complete Order</button>
                                 </form>
                             </td>
+                            <script>
+                                function openUsernamePrompt() {
+                                    const username = prompt("Enter Delivery Boy Username:");
+                                    if (username) {
+                                        // Set the username into a hidden input and submit the form
+                                        const form = document.getElementById('completeOrderForm');
+                                        const input = document.createElement('input');
+                                        input.type = 'hidden';
+                                        input.name = 'delivery_boy_username';
+                                        input.value = username;
+                                        form.appendChild(input);
+                                        form.submit();
+                                    }
+                                }
+                            </script>
                         </tr>
                     <?php endforeach; ?>
                 <?php else: ?>
@@ -334,6 +386,7 @@ $conn->close();
                 <?php endif; ?>
             </tbody>
         </table>
+        </center>
     </div>
 
     <br><br>

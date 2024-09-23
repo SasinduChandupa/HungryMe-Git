@@ -61,16 +61,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         // Check role and query the appropriate table
         if ($login_role == 'Admin') {
-            // Query from admin table
             $sql = "SELECT * FROM admin WHERE name='$login_name' AND role='$login_role'";
         } elseif ($login_role == 'delivery_boy') {
-            // Query from delivery table
             $sql = "SELECT * FROM deliveryboy WHERE name='$login_name' AND role='$login_role'";
         } elseif ($login_role == 'shop_owner') {
-            // Query from shop table
             $sql = "SELECT * FROM shop WHERE ShopName='$login_name' AND role='$login_role'";
         } else {
-            // Query from customer table
             $sql = "SELECT * FROM customer WHERE name='$login_name' AND role='$login_role'";
         }
 
@@ -79,12 +75,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if ($result->num_rows > 0) {
             $row = $result->fetch_assoc();
 
-            // Verify password
-            if ($row['password'] === $login_pass) { // Ensure the correct field name for password
-                // Password is correct, set session variables
+            if ($row['password'] === $login_pass) { 
                 $_SESSION['username'] = $login_name;
                 $_SESSION['role'] = $row['role'];
-                $_SESSION['customer_id'] = $row['id']; // Assuming ID is stored in the table
+                $_SESSION['customer_id'] = $row['id']; 
 
                 setcookie("password", "$login_pass", time()+3600, "/","", 0); 
                 setcookie("username", "$login_name", time()+3600, "/","", 0);
@@ -219,27 +213,30 @@ $conn->close();
     </script>
    
    <nav class="navbar navbar-expand-sm bg-warning">
-        <div class="container-fluid">
-            <div class="logo textual pull-left">
-                <img src="HUNGRYME(txt).png" height="40px" alt="Logo">
-            </div>
-            <ul class="navbar-nav ml-auto">
-                <li id="l1"><a class="nav-link" href="#home">Home</a></li>
-                <li id="l2"><a class="nav-link" href="#footer">About us</a></li>
-                <li id="l3"><a class="nav-link" href="https://wa.me/94722714507">Contact us</a></li>
-                <li id="l4"><a class="nav-link" href="https://maps.app.goo.gl/5sHYmUQesEMHQfWNA">Main Branch</a></li>
-                <li id="l5"><button id="show-popup1" class="login-button"><i class="fa-solid fa-user fa-xl"></i></button></li>
-                <li id="l7">
-                    <div class="buttonDark"> <button onclick="DarkMode()">
-                            <i class="fa-solid fa-moon fa-xl"></i>
-                        </button>
-                    </div>
-                </li>
-                <li> <button id="btnbars"><i class="fa-solid fa-bars fa-2xl"></i></button>
-                </li>
-            </ul>
+    <div class="container-fluid">
+        <div class="logo textual pull-left">
+            <img src="HUNGRYME(txt).png" height="40px" alt="Logo">
         </div>
-    </nav>
+        <ul class="navbar-nav ml-auto">
+            <li id="l1"><a class="nav-link" href="#home">Home</a></li>
+            <li id="l2"><a class="nav-link" href="#footer">About us</a></li>
+            <li id="l3"><a class="nav-link" href="https://wa.me/94722714507">Contact us</a></li>
+            <li id="l4"><a class="nav-link" href="https://maps.app.goo.gl/5sHYmUQesEMHQfWNA">Main Branch</a></li>
+            <li id="l6"><a class="nav-link" href="https://forms.gle/NmuEtnQbhLHnqMNN8" target="_blank">Add Shop</a></li>
+            <li id="l5"><button id="show-popup1" class="login-button"><i class="fa-solid fa-user fa-xl"></i></button></li>
+            <li id="l7">
+                <div class="buttonDark">
+                    <button onclick="DarkMode()">
+                        <i class="fa-solid fa-moon fa-xl"></i>
+                    </button>
+                </div>
+            </li>
+            <li>
+                <button id="btnbars"><i class="fa-solid fa-bars fa-2xl"></i></button>
+            </li>
+        </ul>
+    </div>
+</nav>
 
     <!-- Login / SignUp Modal -->
     <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
@@ -377,7 +374,7 @@ $conn->close();
 
     <br>
     <label for="CustomerName" style="display: inline-block; font-weight: bold; padding-left: 20px;">Hello</label>
-    <input type="text" id="CustomerName" name="CustomerName" readonly value="<?php echo isset($_COOKIE['username']) ? $_COOKIE['username'] : 'ABC'; ?>" style="display: inline-block; border: none; font-weight: bold; background-color: transparent; color: black;">
+    <input type="text" id="CustomerName" name="CustomerName" readonly value="<?php echo isset($_COOKIE['username']) ? $_COOKIE['username'] : 'Foodiezz'; ?>" style="display: inline-block; border: none; font-weight: bold; background-color: transparent; color: black;">
 
     <div class="container">
         <table class="table table-bordered table-hover" style="width: 100%; border-collapse: collapse; table-layout: auto;">
@@ -488,7 +485,7 @@ $conn->close();
 
                         // Add to cart button click event
                         $(".add-to-cart").click(function () {
-                            var username = $("#CustomerName").val(); // Get username from the input field
+                            var username = $("#CustomerName").val(); 
                             var menuName = $(this).data('menu-name');
                             var description = $(this).data('description');
 
@@ -581,8 +578,15 @@ $conn->close();
             </div>
         </div>
     </div>
-
-    <br><br><br><br>
+    <br><br>
+    <!--QR-->
+    <center>
+        <h6 class="text-uppercase fw-bold">Add Your Shop to HungryMe</h6>
+        <img src="QR.png" alt="QR Code for Add Shop" width="100px">
+        <p>(Scan Me)</p>
+    </center>
+    
+    <br><br>
     <!-- Footer -->
     <footer>
         <div class="text-center text-lg-start" id="footer">
@@ -604,7 +608,6 @@ $conn->close();
                     <h4 class="text-uppercase fw-bold mb-4"><i class="fas fa-burger me-3"></i>HungryMe</h4>
                     <p>Join us to quench your hunger</p>
                 </div>
-                <!-- Grid column -->
                 <div class="col-md-4 col-lg-3 col-xl-3 mx-auto mb-md-0 mb-4">
                     <h6 class="text-uppercase fw-bold mb-4">Contact</h6>
                     <p><i class="fas fa-home me-3"></i> No.46, Matara RD, Galle</p>

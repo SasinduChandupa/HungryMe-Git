@@ -61,7 +61,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['addMenuItem'])) {
     $menuitemDescription = $_POST['menuitemDescription'];
     $district = $_POST['menuitemDistrict'];
 
-    // Handle file upload
     $menuitemImage = "";
     if (isset($_FILES['menuitemImage']) && $_FILES['menuitemImage']['error'] == UPLOAD_ERR_OK) {
         $target_dir = "uploads/";
@@ -71,10 +70,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['addMenuItem'])) {
 
         // Check if directory exists
         if (!is_dir($target_dir)) {
-            mkdir($target_dir, 0755, true); // Create directory if it doesn't exist
+            mkdir($target_dir, 0755, true); 
         }
 
-        // Check if image file is a actual image or fake image
         $check = getimagesize($_FILES["menuitemImage"]["tmp_name"]);
         if ($check !== false) {
             $uploadOk = 1;
@@ -90,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['addMenuItem'])) {
         }
 
         // Check file size
-        if ($_FILES["menuitemImage"]["size"] > 500000) { // 50KB limit
+        if ($_FILES["menuitemImage"]["size"] > 500000) { // 500KB limit
             echo "Sorry, your file is too large.";
             $uploadOk = 0;
         }
@@ -117,7 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['addMenuItem'])) {
     }
 
     // Step 1: Get the ShopID from the `shop` table using the logged-in username
-    $userName = $_COOKIE['username']; // Assuming the username is stored in a cookie
+    $userName = $_COOKIE['username']; 
     $sqlShopID = "SELECT ShopID FROM shop WHERE ShopName = ?";
     $stmtShopID = $conn->prepare($sqlShopID);
     $stmtShopID->bind_param("s", $userName);
@@ -180,6 +178,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['removeMenuItem'])) {
 
 ?>
 
+<!-- Order Details -->
+
 <?php
 // Database connection
 $servername = "localhost";
@@ -210,10 +210,10 @@ if ($resultShop->num_rows > 0) {
     $rowShop = $resultShop->fetch_assoc();
     $shopID = $rowShop['ShopID'];
 
-    // Step 2: Get OrderID related to the ShopID
-    $sqlOrderShop = "SELECT OrderID FROM ordershop WHERE ShopID = ?";
+    // Step 2: Get OrderID related to the ShopID (use FIND_IN_SET to check for ShopID in comma-separated values)
+    $sqlOrderShop = "SELECT OrderID FROM ordershop WHERE FIND_IN_SET(?, ShopID) > 0";
     $stmtOrderShop = $conn->prepare($sqlOrderShop);
-    $stmtOrderShop->bind_param("i", $shopID);
+    $stmtOrderShop->bind_param("s", $shopID);
     $stmtOrderShop->execute();
     $resultOrderShop = $stmtOrderShop->get_result();
 
@@ -221,8 +221,8 @@ if ($resultShop->num_rows > 0) {
         while ($rowOrderShop = $resultOrderShop->fetch_assoc()) {
             $orderID = $rowOrderShop['OrderID'];
 
-            // Step 3: Get MenuItemID related to the OrderID
-            $sqlOrderItem = "SELECT MenuItemID FROM orderitem WHERE OrderID = ?";
+            // Step 3: Get MenuItemID and AddonID related to the OrderID
+            $sqlOrderItem = "SELECT MenuItemID, AddonID FROM orderitem WHERE OrderID = ?";
             $stmtOrderItem = $conn->prepare($sqlOrderItem);
             $stmtOrderItem->bind_param("i", $orderID);
             $stmtOrderItem->execute();
@@ -231,6 +231,7 @@ if ($resultShop->num_rows > 0) {
             if ($resultOrderItem->num_rows > 0) {
                 while ($rowOrderItem = $resultOrderItem->fetch_assoc()) {
                     $menuItemID = $rowOrderItem['MenuItemID'];
+                    $addonID = $rowOrderItem['AddonID'];
 
                     // Step 4: Get MenuName and Description from menuitem table
                     $sqlMenuItem = "SELECT MenuName, Description FROM menuitem WHERE MenuItemID = ?";
@@ -272,6 +273,7 @@ if ($resultShop->num_rows > 0) {
                                     'OrderID' => $orderID,
                                     'MenuName' => $menuName,
                                     'Description' => $description,
+                                    'AddonID' => $addonID,
                                     'DeliveryBoyID' => $deliveryBoyID,
                                     'Quantity' => $quantity
                                 ];
@@ -286,6 +288,7 @@ if ($resultShop->num_rows > 0) {
 
 $conn->close();
 ?>
+
 
 
 <!DOCTYPE html>
@@ -437,8 +440,9 @@ $conn->close();
                     <th>Order ID</th>
                     <th>Menu Items</th>
                     <th>Description</th>
+                    <th>Addon</th>
                     <th>DeliveryBoy ID</th>
-                    <th>Quantity</th> <!-- Add Quantity column -->
+                    <th>Quantity</th>
                 </tr>
             </thead>
             <tbody>
@@ -448,8 +452,9 @@ $conn->close();
                             <td><?php echo htmlspecialchars($order['OrderID']); ?></td>
                             <td><?php echo htmlspecialchars($order['MenuName']); ?></td>
                             <td><?php echo htmlspecialchars($order['Description']); ?></td>
+                            <td><?php echo isset($order['AddonID']) && $order['AddonID'] !== null ? "selected" : "not selected"; ?></td>
                             <td><?php echo htmlspecialchars(!empty($order['DeliveryBoyID']) ? $order['DeliveryBoyID'] : "Not Accepted"); ?></td>
-                            <td><?php echo htmlspecialchars($order['Quantity']); ?></td> <!-- Display Quantity -->
+                            <td><?php echo htmlspecialchars($order['Quantity']); ?></td>
                         </tr>
                     <?php endforeach; ?>
                 <?php else: ?>
@@ -652,37 +657,30 @@ $conn->close();
 
 
     <script>
-        // Get the Add Item modal element
         var addModal = document.getElementById("addModal");
         var openAddModalBtn = document.getElementById("openAddModal");
         var closeAddSpan = document.getElementsByClassName("close-add")[0];
 
-        // Get the Edit Item modal element
         var editModal = document.getElementById("editModal");
         var openEditModalBtn = document.getElementById("openEditModal");
         var closeEditSpan = document.getElementsByClassName("close-edit")[0];
 
-        // Open Add Item modal
         openAddModalBtn.onclick = function() {
             addModal.style.display = "block";
         }
 
-        // Close Add Item modal
         closeAddSpan.onclick = function() {
             addModal.style.display = "none";
         }
 
-        // Open Edit Item modal
         openEditModalBtn.onclick = function() {
             editModal.style.display = "block";
         }
 
-        // Close Edit Item modal
         closeEditSpan.onclick = function() {
             editModal.style.display = "none";
         }
 
-        // Close modal if clicked outside of modal content
         window.onclick = function(event) {
             if (event.target == addModal) {
                 addModal.style.display = "none";

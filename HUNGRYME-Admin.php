@@ -17,7 +17,7 @@ if ($conn->connect_error) {
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $shopName = $conn->real_escape_string($_POST['shop-name']);
     $shopEmail = $conn->real_escape_string($_POST['shop-email']);
-    $shopPhone = $conn->real_escape_string($_POST['shop-phone']); // This is a comma-separated string
+    $shopPhone = $conn->real_escape_string($_POST['shop-phone']); 
 
     // Determine the next ShopID
     $result = $conn->query("SELECT MAX(CAST(SUBSTRING(ShopID, 4) AS UNSIGNED)) AS max_id FROM shop");
@@ -34,7 +34,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Insert into Shop table
     $sql = "INSERT INTO shop (ShopID, ShopName, ShopEmail,password,role) VALUES ('$shopID', '$shopName', '$shopEmail','$shopID','shop_owner')";
     if ($conn->query($sql) === TRUE) {
-        // Split the comma-separated phone numbers and trim whitespace
         $phoneNumbers = array_map('trim', explode(',', $shopPhone));
 
         // Insert each phone number into ShopPhone table
@@ -43,7 +42,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $sqlPhone = "INSERT INTO shopphone (ShopID, ShopPhone) VALUES ('$shopID', '$phone')";
             if ($conn->query($sqlPhone) !== TRUE) {
                 echo "Error inserting phone number: " . $conn->error;
-                // Optionally, you can add rollback or handle the error as needed
             }
         
 
@@ -185,7 +183,7 @@ $conn->close();
                         i++;
                         setTimeout(typeWriter, speed);
                     } else {
-                        setTimeout(clearText, 0); // Clear immediately
+                        setTimeout(clearText, 0);
                     }
                 } else if (phase === 2) {
                     if (i < secondText.length) {
@@ -193,7 +191,7 @@ $conn->close();
                         i++;
                         setTimeout(typeWriter, speed);
                     } else {
-                        setTimeout(clearText, 0); // Clear immediately
+                        setTimeout(clearText, 0); 
                     }
                 }
             }
@@ -201,7 +199,7 @@ $conn->close();
             function clearText() {
                 i = 0;
                 document.getElementById("typewriter").innerHTML = "";
-                phase = phase === 1 ? 2 : 1; // Switch between phase 1 and phase 2
+                phase = phase === 1 ? 2 : 1; // Switch between 1 and 2
                 setTimeout(typeWriter, speed);
             }
 
